@@ -1,0 +1,440 @@
+---
+title: "Longitudinal_Functioning"
+author: "Julia Gallucci"
+date: "2026-02-11"
+output: html_document
+---
+Libraries
+```{r}
+library(patchwork)
+library(haven)
+library(tidyr)
+library(car)
+library(readr)
+library(table1)
+library(ggpubr)
+library(ggplot2)
+library(dplyr)
+library(car)
+library(knitr)
+library(kableExtra)
+library(broom)
+library(purrr)
+library(stringr)
+library(RColorBrewer)
+library(cowplot)
+```
+
+Load in data and clean
+```{R}
+class_membership_597 <- read_csv("~/Desktop/UOFT PhD/Project_3/class_membership_597.csv")
+PEPP_2024_12_12_IDmatched <- read_sav("~/Desktop/UOFT PhD/Project_3/PEPP_2024-12-12-IDmatched.sav")
+
+#remove substance induced or brief psychotic
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  filter(!dx_0 %in% c(292.10, 298.80))
+
+PEPP_2024_12_12_IDmatched = right_join(PEPP_2024_12_12_IDmatched, class_membership_597)
+
+PEPP_2024_12_12_IDmatched$gender <- factor(
+  PEPP_2024_12_12_IDmatched$gender, levels = c(0,1,2),
+  labels = c("other","Male","Female")
+)
+
+PEPP_2024_12_12_IDmatched$Vmin <- factor(
+  PEPP_2024_12_12_IDmatched$Vmin, levels = c(0,1),
+  labels = c("not visible minorty","visible minority")
+)
+
+PEPP_2024_12_12_IDmatched$NEET <- factor(
+  PEPP_2024_12_12_IDmatched$NEET, levels = c(0,1),
+  labels = c("not employeed","employeed")
+)
+
+PEPP_2024_12_12_IDmatched$INDPT <- factor(
+  PEPP_2024_12_12_IDmatched$INDPT, levels = c(0,1),
+  labels = c("dependent","independent")
+)
+
+PEPP_2024_12_12_IDmatched$REL <- factor(
+  PEPP_2024_12_12_IDmatched$REL, levels = c(0,1),
+  labels = c("single","not single")
+)
+
+PEPP_2024_12_12_IDmatched$mode <- factor(
+  PEPP_2024_12_12_IDmatched$mode, levels = c(1,2),
+  labels = c("acute","insidious")
+)
+
+PEPP_2024_12_12_IDmatched$dx_0 <- factor(
+  PEPP_2024_12_12_IDmatched$dx_0,
+  levels = c(
+    291.00, 292.10, 293.81, 295.10, 295.20, 295.30, 295.40, 295.60, 
+    295.70, 295.90, 296.04, 296.34, 296.40, 296.44, 296.50, 296.60, 
+    296.80, 296.89, 297.10, 298.80, 298.90
+  ),
+  labels = c(
+    "alcohol-induced psychosis",
+    "substance-induced psychosis",
+    "psychosis due to medical condition",
+    "schizophrenia-disorganized",
+    "schizophrenia-catatonic",
+    "schizophrenia-paranoid",
+    "schizophreniform",
+    "schizophrenia-residual type",
+    "schizoaffective",
+    "schizophrenia-undifferentiated",
+    "Bipolar I with psychotic features",
+    "major dep with psychotic features",
+    "Bipolar I- manic recent episode",
+    "Bipolar I - manic with psychotic features",
+    "Bipolar I - depressed recent episode",
+    "Bipolar I - mixed recent episode",
+    "Bipolar Disorder NOS",
+    "Bipolar II",
+    "delusional disorder",
+    "brief psychotic disorder",
+    "psychosis NOS"
+  )
+)
+
+PEPP_2024_12_12_IDmatched$class_lv1_3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_lv1_3, levels = c(1,2,3),
+  labels= c("Low","Persistent High","Remitting")
+)
+
+PEPP_2024_12_12_IDmatched$class_lv1_3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_lv1_3,
+  levels = c("Low", "Remitting", "Persistent High")
+)
+
+PEPP_2024_12_12_IDmatched$class_sans3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_sans3, levels = c(1,2,3),
+  labels= c("Persistent High","Low", "Remitting")
+)
+
+PEPP_2024_12_12_IDmatched$class_sans3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_sans3,
+  levels = c("Low", "Remitting", "Persistent High")
+)
+
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(dx_simplified = case_when(
+    grepl("schizo", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("psychosis NOS", dx_0, ignore.case = TRUE) ~ "psychosis NOS",
+    grepl("delusional disorder", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("Bipolar", dx_0, ignore.case = TRUE) ~ "bp",
+    grepl("major dep", dx_0, ignore.case = TRUE) ~ "mdd",
+    TRUE ~ dx_0  # keeps other diagnoses unchanged
+  ))
+
+
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(antipsychotic_usage = case_when(
+    CPZ_0 == 0 ~ "No",
+    is.na(CPZ_0) ~ "Missing",
+    TRUE ~ "Yes"
+  ))
+
+
+```
+## Cognition Exp Analysis
+
+```{r}
+df <- PEPP_2024_12_12_IDmatched %>%
+  mutate(
+    sop_z = coalesce(CogState_sop_z, PP_sop_z),
+    va_z = coalesce(CogState_va_z, PP_va_z),
+    vism_z = coalesce(CogState_vism_z, PP_vism_z),
+    verbm_z = coalesce(CogState_verbm_z, PP_verbm_z),
+    wm_z = coalesce(CogState_wm_z, PP_wm_z),
+    ef_z = coalesce(CogState_ef_z, PP_ef_z),
+    sc_z = coalesce(CogState_sc_z, PP_sc_z)
+  )
+
+df <- df %>%
+  mutate(dx_0 = case_when(
+    grepl("schizo", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("psychosis NOS", dx_0, ignore.case = TRUE) ~ "psychosis NOS",
+    grepl("delusional disorder", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("Bipolar", dx_0, ignore.case = TRUE) ~ "bp",
+    grepl("major dep", dx_0, ignore.case = TRUE) ~ "mdd",
+    TRUE ~ dx_0  # keeps other diagnoses unchanged
+  ))
+
+
+df_cog <- df %>%
+  dplyr::select(
+    pin, sop_z, va_z, vism_z, verbm_z, wm_z, ef_z, sc_z, class_sans3,class_lv1_3
+  ) %>% na.omit()
+
+```
+### Negative
+```{r}
+df_cog$class_sans3 <- factor(
+  df_cog$class_sans3,
+  levels = c("Low", "Remitting","Persistent High")
+)
+z_cols <- names(df_cog)[grepl("_z$", names(df_cog))]
+df_long <- df_cog %>%
+  pivot_longer(cols = all_of(z_cols), names_to = "domain", values_to = "score")
+
+df_long <- df_long %>%
+  mutate(domain = dplyr::recode(domain,
+    "sop_z"   = "Speed of Processing",
+    "va_z"    = "Visual Attention",
+    "vism_z"  = "Visual Memory",
+    "verbm_z" = "Verbal Memory",
+    "wm_z"    = "Working Memory",
+    "ef_z"    = "Executive Function",
+    "sc_z"    = "Social Cognition"
+  ))
+
+##check assumptions for anova
+ggplot(df_long, aes(x = score, fill = domain)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ domain, scales = "free") +
+  theme_classic(base_size = 12) +
+  labs(
+    title = "Density Plots of Cognitive Domain Z-Scores",
+    x = "Z-Score",
+    y = "Density"
+  ) +
+  theme(
+    legend.position = "none",
+    strip.text = element_text(size = 12, face = "bold")
+  )
+
+#Check homogeneity of variance (Levene’s test)
+leveneTest(score ~ class_sans3 * domain, data = df_long) #significant
+leveneTest(score ~ class_lv1_3 * domain, data = df_long) #significant
+#Check normality 
+df_long %>%
+  group_by(domain) %>%
+  summarise(
+    p_value = shapiro.test(score)$p.value
+  ) #significant
+
+
+######## Normality assumptions were violated use non-parametric
+ggplot(df_long, aes(x = class_sans3, y = score, fill = class_sans3)) +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  geom_jitter(alpha = 0.4, width = 0.15, shape = 21, color = "black") +
+  facet_wrap(~ domain, ncol = 4) +
+  theme_classic(base_size = 12) +
+  labs(y = "Z-score") +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Low" = "#E41A1C",          # Red (Set1 red)
+      "Remitting" = "#4DAF4A",    # Green (Set1 green)
+      "Persistent High" = "#377EB8"  # Blue (Set1 blue)
+    )
+  )
+
+# Step 1: Run Kruskal–Wallis for each domain
+kw_results <- df_long %>%
+  group_by(domain) %>%
+  summarise(
+    statistic = kruskal.test(score ~ class_sans3)$statistic,
+    p_value = kruskal.test(score ~ class_sans3)$p.value
+  )
+
+# Step 2: Apply FDR correction
+kw_results <- kw_results %>%
+  mutate(p_adj = p.adjust(p_value, method = "fdr"))
+
+# Step 3: Identify significant measures
+signif_measures <- kw_results %>%
+  filter(p_adj < 0.05) %>%
+  pull(domain)
+
+# Step 4: Pairwise Wilcoxon for significant measures
+if (length(signif_measures) == 0) {
+  pairwise_df_filtered <- data.frame()
+  message("No significant measures to run post-hoc tests.")
+} else {
+  pairwise_results <- df_long %>%
+    filter(domain %in% signif_measures) %>%
+    group_by(domain) %>%
+    group_map(~ {
+      pw <- pairwise.wilcox.test(
+        .x$score, .x$class_sans3,
+        p.adjust.method = "fdr"
+      )
+      broom::tidy(pw)
+    }, .keep = TRUE) %>%
+    set_names(signif_measures)
+
+  pairwise_df <- bind_rows(pairwise_results, .id = "domain")
+
+  # Step 5: Filter significant pairwise results only
+  pairwise_df_filtered <- pairwise_df %>%
+    filter(p.value < 0.05) %>%
+    dplyr::select(domain, group1, group2, p.value)
+}
+
+# View results
+kw_results %>% arrange(-statistic) %>% mutate(p_value = round(p_value, 3)) %>%mutate(p_adj = round(p_adj, 3))
+pairwise_df_filtered
+
+```
+### Depressive
+```{r}
+df_cog$class_lv1_3 <- factor(
+  df_cog$class_lv1_3,
+  levels = c("Low", "Remitting", "Persistent High")
+)
+
+ggplot(df_long, aes(x = as.factor(class_lv1_3), y = score, fill = class_lv1_3)) +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  geom_jitter(alpha = 0.4, width = 0.15, shape = 21, color = "black") +
+  facet_wrap(~ domain, ncol = 4) +
+  theme_classic(base_size = 12) +
+  labs(y="Z-score")+
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)  # rotate class names
+  )+
+  scale_fill_brewer(palette = "Set1") 
+
+# Step 1: Run Kruskal–Wallis for each domain
+kw_results <- df_long %>%
+  group_by(domain) %>%
+  summarise(
+    statistic = kruskal.test(score ~ class_lv1_3)$statistic,
+    p_value = kruskal.test(score ~ class_lv1_3)$p.value
+  )
+
+# Step 2: Apply FDR correction
+kw_results <- kw_results %>%
+  mutate(p_adj = p.adjust(p_value, method = "fdr"))
+
+# Step 3: Identify significant measures
+signif_measures <- kw_results %>%
+  filter(p_adj < 0.05) %>%
+  pull(domain)
+
+# Step 4: Pairwise Wilcoxon for significant measures
+if (length(signif_measures) == 0) {
+  pairwise_df_filtered <- data.frame()
+  message("No significant measures to run post-hoc tests.")
+} else {
+  pairwise_results <- df_long %>%
+    filter(domain %in% signif_measures) %>%
+    group_by(domain) %>%
+    group_map(~ {
+      pw <- pairwise.wilcox.test(
+        .x$score, .x$class_lv1_3,
+        p.adjust.method = "fdr"
+      )
+      broom::tidy(pw)
+    }, .keep = TRUE) %>%
+    set_names(signif_measures)
+
+  pairwise_df <- bind_rows(pairwise_results, .id = "domain")
+
+  # Step 5: Filter significant pairwise results
+  pairwise_df_filtered <- pairwise_df %>%
+    filter(p.value < 0.05) %>%
+    mutate(
+      direction = case_when(
+        estimate > 0 ~ ">",
+        estimate < 0 ~ "<",
+        TRUE ~ "="
+      ),
+      contrast_direction = paste0(group1, direction, group2)
+    ) %>%
+    select(domain, group1, group2, p.value)
+}
+
+# View results
+kw_results %>% arrange(-statistic) %>% mutate(p_value = round(p_value, 3)) %>%mutate(p_adj = round(p_adj, 3))
+pairwise_df_filtered
+
+```
+
+## Longitudinal Functioning 
+### Depressive Symptoms
+```{r}
+CDSS_SOFAS_0 <- PEPP_2024_12_12_IDmatched %>% dplyr::select(pin, class_lv1_3, class_sans3, SOFAS_0) %>% na.omit()
+CDSS_SOFAS_12 <- PEPP_2024_12_12_IDmatched %>% dplyr::select(pin, class_lv1_3, class_sans3, SOFAS_12) %>% na.omit()
+
+table(CDSS_SOFAS_0$class_lv1_3) 
+table(CDSS_SOFAS_12$class_lv1_3) 
+
+kruskal.test(SOFAS_0 ~ class_lv1_3, data = PEPP_2024_12_12_IDmatched)
+kruskal.test(SOFAS_12 ~ class_lv1_3, data = PEPP_2024_12_12_IDmatched)
+pairwise.wilcox.test(PEPP_2024_12_12_IDmatched$SOFAS_12, PEPP_2024_12_12_IDmatched$class_lv1_3, p.adjust.method = "fdr")
+
+p1 <- ggplot(CDSS_SOFAS_0, aes(x = as.factor(class_lv1_3), y = SOFAS_0, fill = class_lv1_3)) +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  geom_jitter(alpha = 0.4, width = 0.15, shape = 21, color = "black") +
+  theme_classic(base_size = 12) +
+  labs(y = "SOFAS Baseline") +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  scale_fill_manual(values = c(
+      "Low" = "#E41A1C",          # Red (Set1 red)
+      "Remitting" = "#4DAF4A",    # Green (Set1 green)
+      "Persistent High" = "#377EB8"  # Blue (Set1 blue)
+    ))
+
+p2 <- ggplot(CDSS_SOFAS_12, aes(x = as.factor(class_lv1_3), y = SOFAS_12, fill = class_lv1_3)) +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  geom_jitter(alpha = 0.4, width = 0.15, shape = 21, color = "black") +
+  theme_classic(base_size = 12) +
+  labs(y = "SOFAS 12-Month Follow-up") +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  scale_fill_manual(values = c(
+      "Low" = "#E41A1C",          # Red (Set1 red)
+      "Remitting" = "#4DAF4A",    # Green (Set1 green)
+      "Persistent High" = "#377EB8"  # Blue (Set1 blue)
+    ))
+
+# Combine side-by-side
+plot_grid(p1, p2, labels = c("A", "B"), ncol = 2, align = "hv")
+```
+
+### Negative Symptoms
+```{r}
+table(CDSS_SOFAS_0$class_sans3) 
+table(CDSS_SOFAS_12$class_sans3) 
+
+kruskal.test(SOFAS_0 ~ class_sans3, data = PEPP_2024_12_12_IDmatched)
+pairwise.wilcox.test(PEPP_2024_12_12_IDmatched$SOFAS_0, PEPP_2024_12_12_IDmatched$class_sans3, p.adjust.method = "fdr")
+kruskal.test(SOFAS_12 ~ class_sans3, data = PEPP_2024_12_12_IDmatched)
+pairwise.wilcox.test(PEPP_2024_12_12_IDmatched$SOFAS_12, PEPP_2024_12_12_IDmatched$class_sans3, p.adjust.method = "fdr")
+
+p1 <- ggplot(CDSS_SOFAS_0, aes(x = as.factor(class_sans3), y = SOFAS_0, fill = class_sans3)) +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  geom_jitter(alpha = 0.4, width = 0.15, shape = 21, color = "black") +
+  theme_classic(base_size = 12) +
+  labs(y = "SOFAS Baseline") +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  scale_fill_manual(values = c(
+      "Low" = "#E41A1C",          # Red (Set1 red)
+      "Remitting" = "#4DAF4A",    # Green (Set1 green)
+      "Persistent High" = "#377EB8"  # Blue (Set1 blue)
+    ))
+
+p2 <- ggplot(CDSS_SOFAS_12, aes(x = as.factor(class_sans3), y = SOFAS_12, fill = class_sans3)) +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  geom_jitter(alpha = 0.4, width = 0.15, shape = 21, color = "black") +
+  theme_classic(base_size = 12) +
+  labs(y = "SOFAS 12-Month Follow-up") +
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  scale_fill_manual(values = c(
+      "Low" = "#E41A1C",          # Red (Set1 red)
+      "Remitting" = "#4DAF4A",    # Green (Set1 green)
+      "Persistent High" = "#377EB8"  # Blue (Set1 blue)
+    ))
+
+# Combine side-by-side
+plot_grid(p1, p2, labels = c("A", "B"), ncol = 2, align = "hv")
+
+```

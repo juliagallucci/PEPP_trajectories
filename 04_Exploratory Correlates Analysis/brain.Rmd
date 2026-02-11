@@ -1,0 +1,440 @@
+---
+title: "Brain"
+author: "Julia Gallucci"
+date: "16/10/2025"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(effectsize)
+library(stringr)
+library(ggseg)
+
+brain <- read.csv("full_brain_measurement_df.csv")
+class_membership_597 <- read.csv("class_membership_597.csv")
+
+class_membership_597$class_lv1_3 <- factor(
+  class_membership_597$class_lv1_3, levels = c(1,2,3),
+  labels= c("Low","Persistent High","Remitting")
+)
+
+class_membership_597$class_lv1_3 <- factor(
+  class_membership_597$class_lv1_3,
+  levels = c("Low", "Remitting", "Persistent High")
+)
+
+classes <- class_membership_597 %>%
+  dplyr::select(pin,class_lv1_3)
+
+brain <- right_join(classes, brain)
+
+brain <- brain %>%
+  filter(!FEP_ID %in% c("sub-269", "sub-272")) #failed qc
+
+table(brain$class_lv1_3)
+
+
+thick_cols <- names(brain)[grep("_thickness", names(brain))]
+area_cols <- names(brain)[grep("_area", names(brain))]
+vol_cols <- c(
+  "Left.Hippocampus", "Right.Hippocampus",
+  "Left.Amygdala", "Right.Amygdala",
+  "Left.Putamen", "Right.Putamen",
+  "Left.Pallidum", "Right.Pallidum",
+  "Left.Caudate", "Right.Caudate",
+  "Left.VentralDC", "Right.VentralDC",
+  "Left.Lateral.Ventricle", "Right.Lateral.Ventricle",
+  "X3rd.Ventricle", "X4th.Ventricle",
+  "Brain.Stem",
+  "CC_Anterior", "CC_Central", "CC_Mid_Anterior", "CC_Mid_Posterior", "CC_Posterior",
+  "Right.Cerebellum.Cortex", "Right.Cerebellum.White.Matter",
+  "Left.Thalamus", "Right.Thalamus"
+)
+
+
+#brain[,area_cols] <- apply(brain[, area_cols], 2, function(x) x/brain$EstimatedTotalIntraCranialVol)
+#brain[,vol_cols] <- apply(brain[, vol_cols], 2, function(x) x/brain$EstimatedTotalIntraCranialVol)
+
+# Regress out ICV from surface area and volume columns
+brain[, area_cols] <- apply(brain[, area_cols], 2, function(x) {
+  residuals(lm(x ~ EstimatedTotalIntraCranialVol, data = brain))
+})
+
+brain[, vol_cols] <- apply(brain[, vol_cols], 2, function(x) {
+  residuals(lm(x ~ EstimatedTotalIntraCranialVol, data = brain))
+})
+```
+
+```{R}
+comparisons <- list(
+  c("Low", "Remitting"),
+  c("Remitting", "Persistent High"),
+  c("Low", "Persistent High")
+)
+
+results <- data.frame()
+
+for (r in names(brain)[4:246]) {
+  for (c in comparisons){
+    dat <- brain %>% filter(class_lv1_3 %in% c)
+    # Assign the numeric column and group factor
+    x <- dat[[r]]
+    g <- factor(dat$class_lv1_3, levels = c(c[1], c[2]))  # relevel
+    # Compute Cliff's delta
+    cd <- cliffs_delta(x ~ g)
+    # Wilcoxon p-value
+    wt <- wilcox.test(x ~ g, exact = FALSE)
+    pval <- wt$p.value
+
+    # Store results
+    results <- rbind(results, data.frame(
+      region = r,
+      group1 = c[1],
+      group2 = c[2],
+      estimate = cd$r_rank_biserial,
+      ci_low = cd$CI_low,
+      ci_high = cd$CI_high,
+      p_value = pval
+    ))
+  }
+}
+
+#Negligible: d < 0.15
+#Small: 0.15 </ |d|< 0.33
+#Moderate: 0.33 </ |d| < 0.47
+#Large: |d| >/ 0.47
+#Positive → values in group1 tend to be higher than group2
+
+#Negative → values in group1 tend to be lower than group2
+```
+
+```{r}
+thick_cols
+
+thick_results <- results %>% filter(region %in% thick_cols)
+
+low_high_thick_results <- thick_results %>%
+  filter(group1 == "Low" & group2 == "Persistent High")
+
+low_high_thick_results <- low_high_thick_results %>%
+  mutate(label = str_remove(region, "_thickness"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region)
+
+low_high_thick_results_filtered <- low_high_thick_results %>% filter(abs(estimate) >= 0.33)
+##########
+rem_high_thick_results <- thick_results %>%
+  filter(group1 == "Remitting" & group2 == "Persistent High")
+
+rem_high_thick_results <- rem_high_thick_results %>%
+  mutate(label = str_remove(region, "_thickness"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region)
+
+rem_high_thick_results_filtered <- rem_high_thick_results %>% filter(abs(estimate) >= 0.33)
+##########
+low_rem_thick_results <- thick_results %>%
+  filter(group1 == "Low" & group2 == "Remitting")
+
+low_rem_thick_results <- low_rem_thick_results %>%
+  mutate(label = str_remove(region, "_thickness"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region)
+
+low_rem_thick_results_filtered <- low_rem_thick_results %>% filter(abs(estimate) >= 0.33)
+
+ggseg( 
+      .data = low_rem_thick_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Cortical Thickness Low- Remitting", fill = "Cliff's delta")
+
+ggseg( 
+      .data = rem_high_thick_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Cortical Thickness Remitting - Persistent High", fill = "Cliff's delta")
+
+ggseg( 
+      .data = low_high_thick_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Cortical Thickness Low - Persistent High", fill = "Cliff's delta")
+
+##effect profile plots
+## ct
+
+# Ensure factors are properly set for plotting/comparisons
+thick_results$group1 <- factor(thick_results$group1, levels = c("Low", "Remitting", "Persistent High"))
+thick_results$group2 <- factor(thick_results$group2, levels = c("Low", "Remitting", "Persistent High"))
+
+# If you want to create a label for plotting
+thick_results$comparison <- paste(thick_results$group1, "vs", thick_results$group2)
+
+thick_results <- thick_results %>%
+  mutate(label = str_remove(region, "_thickness"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region) 
+  
+thick_results <- thick_results %>% arrange(estimate)
+ 
+ggplot(thick_results, aes(x = label, y = estimate, shape = comparison)) +
+  geom_point(position = position_dodge(width = 0.5), size = 2) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), width = 0.2, alpha = 0.4, position = position_dodge(width = 0.5)) +
+  geom_hline(yintercept = c(-0.33, 0.33), 
+             linetype = "dashed", color = "gray50") +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "Brain Region",
+    y = "Effect Size",
+    shape = "Group Comparison"
+  )
+
+
+##filter results
+png("cdss_thickness_effect_sizes.png", width = 1600, height = 1200, res = 200)
+ggplot(thick_results, aes(x = label, y = estimate, shape = comparison)) +
+  geom_point(aes(alpha = abs(estimate) >= 0.33), 
+             position = position_dodge(width = 0.5), size = 2) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high, alpha = abs(estimate) >= 0.33), 
+                width = 0.2, position = position_dodge(width = 0.5)) +
+  scale_alpha_manual(values = c(`TRUE` = 1, `FALSE` = 0.2), guide = "none") +
+  geom_hline(yintercept = c(-0.33, 0.33), 
+             linetype = "dashed", color = "gray50") +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "Brain Region",
+    y = "Effect Size",
+    shape = "Group Comparison"
+  )
+dev.off()
+```
+```{r}
+# Subset your dataframe (assuming it is called df)
+vol_results <- results %>% filter(region %in% vol_cols)
+
+# Replace all periods with hyphens in the 'region' column
+vol_results$label <- gsub("\\.", "-", vol_results$region)
+vol_results <- vol_results %>% dplyr::select(-region)
+
+vol_results <- vol_results %>%
+  mutate(label = case_when(
+    label == "Right-Thalamus" ~ "Right-Thalamus-Proper",
+    label == "Left-Thalamus" ~ "Left-Thalamus-Proper",
+    label == "X4th-Ventricle" ~ "x4th-ventricle",
+    label == "X3rd-Ventricle" ~ "x3rd-ventricle",
+    TRUE ~ label
+  ))
+
+##########
+rem_high_vol_results <- vol_results %>%
+  filter(group1 == "Remitting" & group2 == "Persistent High")
+rem_high_vol_results_filtered <- rem_high_vol_results %>% filter(abs(estimate) >= 0.33)
+
+##########
+low_high_vol_results <- vol_results %>%
+  filter(group1 == "Low" & group2 == "Persistent High")
+low_high_vol_results_filtered <- low_high_vol_results %>% filter(abs(estimate) >= 0.33)
+##########
+low_rem_vol_results <- vol_results %>%
+  filter(group1 == "Low" & group2 == "Remitting")
+low_rem_vol_results_filtered <- low_rem_vol_results %>% filter(abs(estimate) >= 0.33)
+
+ggseg( atlas = ggseg::aseg,
+      .data = rem_high_vol_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Subcortical Volume Remitting- Persistent High", fill = "Cliff's Delta")
+
+ggseg( atlas = ggseg::aseg,
+      .data = low_high_vol_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Subcortical Volume Low- Persistent High", fill = "Cliff's Delta")
+
+ggseg( atlas = ggseg::aseg,
+      .data = low_rem_vol_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Subcortical Volume Low - Remitting", fill = "Cliff's Delta")
+
+
+##effect profile plots
+## volume
+
+# Ensure factors are properly set for plotting/comparisons
+vol_results$group1 <- factor(vol_results$group1, levels = c("Low", "Remitting", "Persistent High"))
+vol_results$group2 <- factor(vol_results$group2, levels = c("Low", "Remitting", "Persistent High"))
+
+# If you want to create a label for plotting
+vol_results$comparison <- paste(vol_results$group1, "vs", vol_results$group2)
+
+
+ggplot(vol_results, aes(x = label, y = estimate, shape = comparison)) +
+  geom_point(position = position_dodge(width = 0.5), size = 2) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), width = 0.2, alpha = 0.4, position = position_dodge(width = 0.5)) +
+  geom_hline(yintercept = c(-0.33,0.33), 
+             linetype = "dashed", color = "gray50") +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "Brain Region",
+    y = "Effect Size",
+    shape = "Group Comparison"
+  )
+
+
+##filter results
+png("cdss_vol_effect_sizes.png", width = 1600, height = 1200, res = 200)
+ggplot(vol_results, aes(x = label, y = estimate, shape = comparison)) +
+  geom_point(aes(alpha = abs(estimate) >= 0.33), 
+             position = position_dodge(width = 0.5), size = 2) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high, alpha = abs(estimate) >= 0.33), 
+                width = 0.2, position = position_dodge(width = 0.5)) +
+  scale_alpha_manual(values = c(`TRUE` = 1, `FALSE` = 0.2), guide = "none") +
+  geom_hline(yintercept = c(-0.33, 0.33), 
+             linetype = "dashed", color = "gray50") +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "Brain Region",
+    y = "Effect Size",
+    shape = "Group Comparison"
+  )
+dev.off()
+```
+
+```{r}
+area_cols
+
+area_results <- results %>% filter(region %in% area_cols)
+
+low_high_area_results <- area_results %>%
+  filter(group1 == "Low" & group2 == "Persistent High")
+
+low_high_area_results <- low_high_area_results %>%
+  mutate(label = str_remove(region, "_area"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region)
+
+low_high_area_results_filtered <- low_high_area_results %>% filter(abs(estimate) >= 0.33)
+##########
+rem_high_area_results <- area_results %>%
+  filter(group1 == "Remitting" & group2 == "Persistent High")
+
+rem_high_area_results <- rem_high_area_results %>%
+  mutate(label = str_remove(region, "_area"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region)
+
+rem_high_area_results_filtered <- rem_high_area_results %>% filter(abs(estimate) >= 0.33)
+##########
+low_rem_area_results <- area_results %>%
+  filter(group1 == "Low" & group2 == "Remitting")
+
+low_rem_area_results <- low_rem_area_results %>%
+  mutate(label = str_remove(region, "_area"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region)
+
+low_rem_area_results_filtered <- low_rem_area_results %>% filter(abs(estimate) >= 0.33)
+
+ggseg( 
+      .data = low_rem_area_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Surface Area Low - Remitting", fill = "Cliff's delta")
+
+ggseg( 
+      .data = rem_high_area_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Surface Area Remitting - Persistent High", fill = "Cliff's delta")
+
+ggseg( 
+      .data = low_high_area_results_filtered, 
+      colour = "black",
+      mapping = aes(fill = estimate), 
+      position = "stacked") +
+  theme_void() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,lim = c(-0.7,0.7))+
+  labs(title = "Surface Area Low - Persistent High", fill = "Cliff's delta")
+
+##effect profile plots
+## ct
+
+# Ensure factors are properly set for plotting/comparisons
+area_results$group1 <- factor(area_results$group1, levels = c("Low", "Remitting", "Persistent High"))
+area_results$group2 <- factor(area_results$group2, levels = c("Low", "Remitting", "Persistent High"))
+
+# If you want to create a label for plotting
+area_results$comparison <- paste(area_results$group1, "vs", area_results$group2)
+
+area_results <- area_results %>%
+  mutate(label = str_remove(region, "_area"),                  # Remove the prefix
+         label = str_replace(label, "(.*)(lh|rh)$", "\\2_\\1")) %>%
+  dplyr::select(-region) 
+  
+area_results <- area_results %>% arrange(estimate)
+ 
+ggplot(area_results, aes(x = label, y = estimate, shape = comparison)) +
+  geom_point(position = position_dodge(width = 0.5), size = 2) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), width = 0.2, alpha = 0.4, position = position_dodge(width = 0.5)) +
+  geom_hline(yintercept = c(-0.33, 0.33), 
+             linetype = "dashed", color = "gray50") +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "Brain Region",
+    y = "Effect Size",
+    shape = "Group Comparison"
+  )
+
+
+##filter results
+png("cdss_area_effect_sizes.png", width = 1600, height = 1200, res = 200)
+ggplot(area_results, aes(x = label, y = estimate, shape = comparison)) +
+  geom_point(aes(alpha = abs(estimate) >= 0.33), 
+             position = position_dodge(width = 0.5), size = 2) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high, alpha = abs(estimate) >= 0.33), 
+                width = 0.2, position = position_dodge(width = 0.5)) +
+  scale_alpha_manual(values = c(`TRUE` = 1, `FALSE` = 0.2), guide = "none") +
+  geom_hline(yintercept = c(-0.33, 0.33), 
+             linetype = "dashed", color = "gray50") +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "Brain Region",
+    y = "Effect Size",
+    shape = "Group Comparison"
+  )
+dev.off()
+```
