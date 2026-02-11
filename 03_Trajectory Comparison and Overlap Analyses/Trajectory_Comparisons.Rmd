@@ -1,0 +1,536 @@
+---
+title: "Trajectory comparisons"
+author: "Julia Gallucci"
+date: "08/10/2025"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(rstatix)
+library(haven)
+library(tidyr)
+library(car)
+library(readr)
+library(table1)
+library(ggpubr)
+library(ggplot2)
+library(car)
+library(knitr)
+library(kableExtra)
+library(broom)
+library(purrr)
+library(stringr)
+library(RColorBrewer)
+
+class_membership_597 <- read_csv("~/Desktop/UOFT PhD/Project_3/class_membership_597.csv")
+PEPP_2024_12_12_IDmatched <- read_sav("~/Desktop/UOFT PhD/Project_3/PEPP_2024-12-12-IDmatched.sav")
+```
+
+```{r}
+#remove substance induced or brief psychotic
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  filter(!dx_0 %in% c(292.10, 298.80))
+
+PEPP_2024_12_12_IDmatched = right_join(PEPP_2024_12_12_IDmatched, class_membership_597)
+```
+
+```{R}
+PEPP_2024_12_12_IDmatched$gender <- factor(
+  PEPP_2024_12_12_IDmatched$gender, levels = c(0,1,2),
+  labels = c("other","Male","Female")
+)
+
+PEPP_2024_12_12_IDmatched$Vmin <- factor(
+  PEPP_2024_12_12_IDmatched$Vmin, levels = c(0,1),
+  labels = c("not visible minorty","visible minority")
+)
+
+PEPP_2024_12_12_IDmatched$NEET <- factor(
+  PEPP_2024_12_12_IDmatched$NEET, levels = c(0,1),
+  labels = c("not employeed","employeed")
+)
+
+PEPP_2024_12_12_IDmatched$INDPT <- factor(
+  PEPP_2024_12_12_IDmatched$INDPT, levels = c(0,1),
+  labels = c("dependent","independent")
+)
+
+PEPP_2024_12_12_IDmatched$REL <- factor(
+  PEPP_2024_12_12_IDmatched$REL, levels = c(0,1),
+  labels = c("single","not single")
+)
+
+PEPP_2024_12_12_IDmatched$mode <- factor(
+  PEPP_2024_12_12_IDmatched$mode, levels = c(1,2),
+  labels = c("acute","insidious")
+)
+
+PEPP_2024_12_12_IDmatched$dx_0 <- factor(
+  PEPP_2024_12_12_IDmatched$dx_0,
+  levels = c(
+    291.00, 292.10, 293.81, 295.10, 295.20, 295.30, 295.40, 295.60, 
+    295.70, 295.90, 296.04, 296.34, 296.40, 296.44, 296.50, 296.60, 
+    296.80, 296.89, 297.10, 298.80, 298.90
+  ),
+  labels = c(
+    "alcohol-induced psychosis",
+    "substance-induced psychosis",
+    "psychosis due to medical condition",
+    "schizophrenia-disorganized",
+    "schizophrenia-catatonic",
+    "schizophrenia-paranoid",
+    "schizophreniform",
+    "schizophrenia-residual type",
+    "schizoaffective",
+    "schizophrenia-undifferentiated",
+    "Bipolar I with psychotic features",
+    "major dep with psychotic features",
+    "Bipolar I- manic recent episode",
+    "Bipolar I - manic with psychotic features",
+    "Bipolar I - depressed recent episode",
+    "Bipolar I - mixed recent episode",
+    "Bipolar Disorder NOS",
+    "Bipolar II",
+    "delusional disorder",
+    "brief psychotic disorder",
+    "psychosis NOS"
+  )
+)
+
+PEPP_2024_12_12_IDmatched$class_lv1_3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_lv1_3, levels = c(1,2,3),
+  labels= c("Low","Persistent High","Remitting")
+)
+
+PEPP_2024_12_12_IDmatched$class_lv1_3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_lv1_3,
+  levels = c("Low", "Remitting", "Persistent High")
+)
+
+PEPP_2024_12_12_IDmatched$class_sans3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_sans3, levels = c(1,2,3),
+  labels= c("Persistent High","Low", "Remitting")
+)
+
+PEPP_2024_12_12_IDmatched$class_sans3 <- factor(
+  PEPP_2024_12_12_IDmatched$class_sans3,
+  levels = c("Low", "Remitting", "Persistent High")
+)
+
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(dx_simplified = case_when(
+    grepl("schizo", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("psychosis NOS", dx_0, ignore.case = TRUE) ~ "psychosis NOS",
+    grepl("delusional disorder", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("Bipolar", dx_0, ignore.case = TRUE) ~ "bp",
+    grepl("major dep", dx_0, ignore.case = TRUE) ~ "mdd",
+    TRUE ~ dx_0  # keeps other diagnoses unchanged
+  ))
+
+
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(antipsychotic_usage = case_when(
+    CPZ_0 == 0 ~ "No",
+    is.na(CPZ_0) ~ "Missing",
+    TRUE ~ "Yes"
+  ))
+
+
+```
+
+```{r}
+#Sample description
+table1(
+  ~ (gender) + ageentry + dui+ droplevels(dx_0)+ dx_simplified+ FIQ + CDS_0 + SANS_0 + SAPS_0 + SOFAS_0 + antipsychotic_usage,
+  data = PEPP_2024_12_12_IDmatched
+)
+
+
+## For trajectories GEN DEP
+table1(
+  ~ (gender) + ageentry + Vmin + NEET + INDPT+ REL + ageonset + dui+ mode +droplevels(dx_0)+ dx_simplified +  CDS_0 + HAS_0 + SANS_0 + SAPS_0 + SOFAS_0   | class_lv1_3, 
+  data = PEPP_2024_12_12_IDmatched
+)
+
+## For trajectories SANS
+table1(
+  ~ (gender) + ageentry + Vmin + NEET + INDPT+ REL + ageonset + dui + mode +droplevels(dx_0)+ dx_simplified +  CDS_0 + HAS_0 + SANS_0 + SAPS_0 + SOFAS_0   | class_sans3, 
+  data = PEPP_2024_12_12_IDmatched
+)
+
+```
+
+```{r}
+# Drop unused factor levels before tabulating
+diag <- PEPP_2024_12_12_IDmatched %>%
+  mutate(
+    dx_0 = droplevels(dx_0)
+  )
+
+# Create a table of counts
+diag_table <- table(diag$class_lv1_3, diag$dx_0)
+
+# Convert to data frame
+df_diag <- as.data.frame(diag_table)
+colnames(df_diag) <- c("Class", "Diagnosis", "Count")
+
+# Drop unused or zero-count diagnoses
+df_diag <- df_diag %>%
+  dplyr::filter(Count > 0)
+
+# Calculate percentages within each class
+df_diag <- df_diag %>%
+  dplyr::group_by(Class) %>%
+  dplyr::mutate(Percent = Count / sum(Count) * 100)
+
+# Plot as percentages
+ggplot(df_diag, aes(x = Diagnosis, y = Percent, fill = Class)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = RColorBrewer::brewer.pal(
+    n = length(unique(df_diag$Class)), name = "Set1")) +
+  coord_flip() +
+  labs(
+    title = "Diagnosis Distribution by Class",
+    x = "Diagnosis",
+    y = "Percentage (%)"
+  ) +
+  theme_minimal()
+
+
+
+```
+
+```{R}
+ggplot(PEPP_2024_12_12_IDmatched, aes(x = gender, fill = gender)) +
+  geom_bar() +
+  theme_classic() +
+  geom_text(stat = 'count', aes(label = ..count..), 
+            position = position_stack(vjust = 0.5), # Center the labels
+            color = "white") + # Change text color for visibility
+  scale_fill_manual(values = c("Male" = "lightblue", 
+                               "Female" = "pink", 
+                               "other" = "lightgreen")) + # Custom colors
+  theme(text = element_text(size = 14), 
+        axis.text = element_text(size = 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        axis.title.x = element_blank()) + 
+  ggtitle("Sex By Class") +
+  facet_wrap(~ class_sans3)
+
+ggplot(PEPP_2024_12_12_IDmatched, aes(x=factor(class_lv1_3), y=ageentry, colour=factor(class_lv1_3), fill=factor(class_lv1_3))) +
+  geom_boxplot(alpha = 0.2) +
+  theme_classic() +    theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+  geom_point(aes(fill = factor(class_lv1_3), color = factor(class_lv1_3)), alpha = 0.2,size = 1, colour= "black", shape = 21, position = position_jitterdodge()) +
+  scale_fill_manual(values = RColorBrewer::brewer.pal(
+    n = length(unique(PEPP_2024_12_12_IDmatched$class_lv1_3)), name = "Set1")) + 
+    scale_color_manual(values = RColorBrewer::brewer.pal(
+    n = length(unique(PEPP_2024_12_12_IDmatched$class_lv1_3)), name = "Set1")) + 
+  ggtitle("Age by Class") + 
+  xlab("Class")+
+  ylab("Age") 
+```
+```{r}
+tab <- table(PEPP_2024_12_12_IDmatched$class_sans3, PEPP_2024_12_12_IDmatched$class_lv1_3)
+tab
+prop.table(table(PEPP_2024_12_12_IDmatched$class_sans3, PEPP_2024_12_12_IDmatched$class_lv1_3)) *100
+```
+```{r}
+neg_lowrem <- c("Low", "Remitting")
+dep_lowrem <- c("Low", "Remitting")
+
+# 1. Concordant: Low–Remitting in both
+concord_lowrem <- sum(tab[neg_lowrem, dep_lowrem])
+
+# 2. Concordant: Persistent High in both
+concord_ph <- tab["Persistent High", "Persistent High"]
+
+# 3. Discordant: High Depressive / Low–Remitting Negative
+disc_highdep <- sum(tab[neg_lowrem, "Persistent High"])
+
+# 4. Discordant: High Negative / Low–Remitting Depressive
+disc_highneg <- sum(tab["Persistent High", dep_lowrem])
+
+c(concord_lowrem, concord_ph, disc_highdep, disc_highneg)
+
+# Collapsed groups 
+concord_lowrem  <- 373
+concord_ph      <- 39
+discord_highdep <- 21
+discord_highneg <- 164
+
+mat1 <- matrix(
+  c(
+    concord_ph,                       # outcome + in exposed
+    discord_highneg,                  # outcome - in exposed
+    discord_highdep,                  # outcome + in reference
+    concord_lowrem                    # outcome - in reference
+  ),
+  nrow = 2,
+  byrow = TRUE
+)
+
+colnames(mat1) <- c("DepPH", "DepLowRem")
+rownames(mat1) <- c("NegPH", "NegLowRem")
+
+mat1
+
+epi.2by2(mat1,
+         method = "cohort.count",
+         outcome = "as.columns",
+         conf.level = 0.95)
+
+```
+
+```{r}
+df <- PEPP_2024_12_12_IDmatched %>%
+  mutate(
+    sop_z = coalesce(CogState_sop_z, PP_sop_z),
+    va_z = coalesce(CogState_va_z, PP_va_z),
+    vism_z = coalesce(CogState_vism_z, PP_vism_z),
+    verbm_z = coalesce(CogState_verbm_z, PP_verbm_z),
+    wm_z = coalesce(CogState_wm_z, PP_wm_z),
+    ef_z = coalesce(CogState_ef_z, PP_ef_z),
+    sc_z = coalesce(CogState_sc_z, PP_sc_z)
+  )
+
+df <- df %>%
+  mutate(dx_0 = case_when(
+    grepl("schizo", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("psychosis NOS", dx_0, ignore.case = TRUE) ~ "psychosis NOS",
+    grepl("delusional disorder", dx_0, ignore.case = TRUE) ~ "ssd",
+    grepl("Bipolar", dx_0, ignore.case = TRUE) ~ "bp",
+    grepl("major dep", dx_0, ignore.case = TRUE) ~ "mdd",
+    TRUE ~ dx_0  # keeps other diagnoses unchanged
+  ))
+
+table(df$dx_0)
+
+df_cog <- df %>%
+  dplyr::select(
+    pin, sop_z, va_z, vism_z, verbm_z, wm_z, ef_z, sc_z, class_sans3,class_lv1_3
+  ) %>% na.omit()
+
+#demo, env and clinical variables
+df <- df %>%
+  dplyr::select(
+    pin, ageentry, gender, Vmin, NEET, INDPT, REL, mode, dx_0, SOFAS_0, SAPS_0, HAS_0,class_sans3,class_lv1_3
+  ) 
+
+
+df <- df %>%
+  mutate(
+    pin = as.factor(pin),
+    ageentry = as.numeric(ageentry),
+    gender = as.factor(gender),
+    dx_0 = as.factor(dx_0),
+    mode = as.factor(mode),
+    Vmin = as.factor(Vmin),
+    NEET = as.factor(NEET),
+    INDPT = as.factor(INDPT),
+    REL = as.factor(REL),
+    SOFAS_0 = as.numeric(SOFAS_0),
+    HAS_0 = as.numeric(HAS_0),
+    SAPS_0 = as.numeric(SAPS_0),
+    class_sans3= as.factor(class_sans3),
+    class_lv1_3= as.factor(class_lv1_3),
+  )
+
+```
+
+```{r}
+neg_df = df%>% select(-class_lv1_3)
+dep_df = df%>% select(-class_sans3)
+
+
+write.csv(dep_df,"PEPP_LV1_XY.csv")
+write.csv(neg_df,"PEPP_SANS_XY.csv")
+```
+
+
+Concordant and Discordant pairs
+```{r}
+combined_groups <- PEPP_2024_12_12_IDmatched %>%
+  mutate(
+    Group = case_when(
+      # Concordant Low/Remitting in both domains
+      class_sans3 %in% c("Low", "Remitting") &
+        class_lv1_3 %in% c("Low", "Remitting") ~
+        "Concordant: Low/Remitting in Both Domains",
+      
+      # Concordant Persistent High in both domains
+      class_sans3 == "Persistent High" &
+        class_lv1_3 == "Persistent High" ~
+        "Concordant: Persistent High in Both Domains",
+      
+      # Discordant: Negative = High, Depressive = Low/Remitting
+      class_sans3 == "Persistent High" &
+        class_lv1_3 %in% c("Low", "Remitting") ~
+        "Discordant: High Negative / Low–Remitting Depressive",
+      
+      # Discordant: Depressive = High, Negative = Low/Remitting
+      class_lv1_3 == "Persistent High" &
+        class_sans3 %in% c("Low", "Remitting") ~
+        "Discordant: High Depressive / Low–Remitting Negative",
+      
+      TRUE ~ NA_character_
+    )
+  ) 
+
+
+
+table1(~ (gender) + ageentry + Vmin + NEET + INDPT+ REL + ageonset + dui+mode +droplevels(dx_0)+ dx_simplified +  CDS_0 + HAS_0 + SANS_0 + SAPS_0 + SOFAS_0   | Group, data = combined_groups)
+
+
+```
+
+Statistical comparisons
+```{r}
+df <- combined_groups #PEPP_2024_12_12_IDmatched
+group <- "Group" #"class_lv1_3"
+
+vars <- c(
+  "gender",
+  "ageentry",
+  "Vmin",
+  "NEET",
+  "INDPT",
+  "REL",
+  "ageonset",
+  "dui",
+  "mode",
+  "dx_simplified",
+  "HAS_0",
+  "SAPS_0",
+  "SOFAS_0"
+)
+
+# Identify categorical variables
+categorical_vars <- c("gender","Vmin","NEET","INDPT","REL","mode","dx_simplified")
+
+df <- df %>%
+  mutate(across(all_of(categorical_vars), ~ factor(.)))
+
+# Storage
+results_table <- data.frame(
+  variable = vars,
+  stat = NA,
+  p_value = NA,
+  test_used = NA
+)
+
+pairwise_results <- list()
+
+for (v in vars) {
+  
+  if (v %in% categorical_vars) {
+    
+    # ----------------------
+    # CATEGORICAL VARIABLES
+    # ----------------------
+    tbl <- table(df[[v]], df[[group]])
+    
+    # Try chi-square; fallback to Fisher
+    test <- tryCatch(
+      chisq.test(tbl),
+      error = function(e) fisher.test(tbl)
+    )
+    
+    # Identify which test
+    test_name <- ifelse(class(test) == "htest" && grepl("Chi-squared", test$method),
+                        "Chi-square",
+                        "Fisher's Exact Test")
+    
+    results_table$stat[results_table$variable == v] <- unname(round(test$statistic,2))
+    results_table$p_value[results_table$variable == v] <- round(test$p.value,2)
+    results_table$test_used[results_table$variable == v] <- test_name
+    
+  } else {
+    
+    # ----------------------
+    # CONTINUOUS VARIABLES
+    # ----------------------
+    test <- kruskal_test(df, formula(paste0(v, " ~ ", group)))
+    
+    results_table$stat[results_table$variable == v] <- round(test$statistic,2)
+    results_table$p_value[results_table$variable == v] <- round(test$p,2)
+    results_table$test_used[results_table$variable == v] <- "Kruskal–Wallis"
+    
+    # Pairwise tests only if significant
+    if (test$p < 0.05) {
+      pw <- df %>%
+        pairwise_wilcox_test(
+          formula = as.formula(paste0(v, " ~ ", group)),
+          p.adjust.method = "fdr"
+        ) %>%
+        mutate(variable = v)
+      
+      pairwise_results[[v]] <- pw
+      print(pw)
+    }
+  }
+}
+
+results_table
+
+
+pairwise_chisq_fdr <- function(df, cat_var, group_var, p_adjust = "fdr") {
+  
+  groups <- unique(df[[group_var]])
+  pairs <- combn(groups, 2, simplify = FALSE)
+  
+  results <- list()
+  
+  for (pair in pairs) {
+    
+    sub <- df[df[[group_var]] %in% pair, ]
+    
+    sub[[cat_var]]   <- droplevels(sub[[cat_var]])
+    sub[[group_var]] <- droplevels(sub[[group_var]])
+    
+    tbl <- table(sub[[cat_var]], sub[[group_var]])
+    
+    if (any(rowSums(tbl) == 0) || any(colSums(tbl) == 0)) next
+    
+    # Perform the test
+    test <- tryCatch(
+      chisq.test(tbl),
+      error = function(e) fisher.test(tbl)
+    )
+    
+    # Identify test
+    test_name <- ifelse(class(test) == "htest" && grepl("Chi-squared", test$method),
+                        "Chi-square",
+                        "Fisher")
+    
+    results[[paste(pair, collapse = "_vs_")]] <- data.frame(
+      variable = cat_var,
+      group1   = pair[1],
+      group2   = pair[2],
+      p_raw    = test$p.value,
+      test_used = test_name
+    )
+  }
+  
+  if (length(results) == 0) return(NULL)
+  
+  out <- dplyr::bind_rows(results)
+  out$p_adj <- p.adjust(out$p_raw, method = p_adjust)
+  
+  return(out)
+}
+
+
+
+#example usage
+#pairwise_chisq_fdr(combined_groups, "gender", "Group")
+#pairwise_chisq_fdr(combined_groups, "dx_simplified", "Group")
+#pairwise_chisq_fdr(combined_groups, "NEET", "Group")
+
+#pairwise_chisq_fdr(PEPP_2024_12_12_IDmatched, "Vmin", "class_lv1_3")
+#pairwise_chisq_fdr(PEPP_2024_12_12_IDmatched, "dx_simplified", "class_lv1_3")
+
+pairwise_chisq_fdr(PEPP_2024_12_12_IDmatched, "gender", "class_sans3")
+pairwise_chisq_fdr(PEPP_2024_12_12_IDmatched, "NEET", "class_sans3")
+pairwise_chisq_fdr(PEPP_2024_12_12_IDmatched, "dx_simplified", "class_sans3")
+```
