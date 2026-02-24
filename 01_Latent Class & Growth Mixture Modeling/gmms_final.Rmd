@@ -1,0 +1,1108 @@
+---
+title: "gmms_final"
+author: "Julia Gallucci, Alyssa Qian, and Sierra Vaillancourt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Load necessary packages
+```{r}
+library(tidyverse)
+library(haven)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(psych)
+library(nFactors)
+library(lcmm)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(ggalluvial)
+library(reshape2)
+```
+
+Data cleaning
+
+```{r}
+
+## Read in raw data 
+
+PEPP_2024_12_12_IDmatched <- read_sav("PEPP_2024-12-12-IDmatched.sav")
+
+# Rename Total CDSS Score Columns
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_total_baseline = CDS_0, #total cds score at baseline
+    cdss_total_1mo = CDS_1, #total cds score at 1-mo follow up
+    cdss_total_2mo = CDS_2, #total cds score at 2-mo follow up
+    cdss_total_3mo = CDS_3, #total cds score at 3-mo follow up
+    cdss_total_6mo = CDS_6, #total cds score at 6-mo follow up
+    cdss_total_9mo = CDS_9, #total cds score at 9-mo follow up
+    cdss_total_12mo = CDS_12, #total cds score at 12-mo follow up
+    cdss_total_18mo = CDS_18, #total cds score at 18-mo follow up
+    cdss_total_24mo = CDS_24 #total cds score at 24-mo follow up
+  )
+
+# Rename individual item scores for baseline
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_baseline = cd1_0,
+    cdss_2_baseline = cd2_0,
+    cdss_3_baseline = cd3_0,
+    cdss_4_baseline = cd4_0,
+    cdss_5_baseline = cd5_0,
+    cdss_6_baseline = cd6_0,
+    cdss_7_baseline = cd7_0,
+    cdss_8_baseline = cd8_0,
+    cdss_9_baseline = cd9_0
+  )
+
+# Individual item scores for month 1
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_1mo = cd1_1,
+    cdss_2_1mo = cd2_1,
+    cdss_3_1mo = cd3_1,
+    cdss_4_1mo = cd4_1,
+    cdss_5_1mo = cd5_1,
+    cdss_6_1mo = cd6_1,
+    cdss_7_1mo = cd7_1,
+    cdss_8_1mo = cd8_1,
+    cdss_9_1mo = cd9_1
+  )
+
+# Individual item scores for month 2
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_2mo = cd1_2,
+    cdss_2_2mo = cd2_2,
+    cdss_3_2mo = cd3_2,
+    cdss_4_2mo = cd4_2,
+    cdss_5_2mo = cd5_2,
+    cdss_6_2mo = cd6_2,
+    cdss_7_2mo = cd7_2,
+    cdss_8_2mo = cd8_2,
+    cdss_9_2mo = cd9_2
+  )
+
+# Individual item scores for month 3
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_3mo = cd1_3,
+    cdss_2_3mo = cd2_3,
+    cdss_3_3mo = cd3_3,
+    cdss_4_3mo = cd4_3,
+    cdss_5_3mo = cd5_3,
+    cdss_6_3mo = cd6_3,
+    cdss_7_3mo = cd7_3,
+    cdss_8_3mo = cd8_3,
+    cdss_9_3mo = cd9_3
+  )
+
+# Individual item scores for month 6
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_6mo = cd1_6,
+    cdss_2_6mo = cd2_6,
+    cdss_3_6mo = cd3_6,
+    cdss_4_6mo = cd4_6,
+    cdss_5_6mo = cd5_6,
+    cdss_6_6mo = cd6_6,
+    cdss_7_6mo = cd7_6,
+    cdss_8_6mo = cd8_6,
+    cdss_9_6mo = cd9_6
+  )
+
+#Individual item scores for month 9
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_9mo = cd1_9,
+    cdss_2_9mo = cd2_9,
+    cdss_3_9mo = cd3_9,
+    cdss_4_9mo = cd4_9,
+    cdss_5_9mo = cd5_9,
+    cdss_6_9mo = cd6_9,
+    cdss_7_9mo = cd7_9,
+    cdss_8_9mo = cd8_9,
+    cdss_9_9mo = cd9_9
+  )
+
+#Individual item scores for month 12
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_12mo = cd1_12,
+    cdss_2_12mo = cd2_12,
+    cdss_3_12mo = cd3_12,
+    cdss_4_12mo = cd4_12,
+    cdss_5_12mo = cd5_12,
+    cdss_6_12mo = cd6_12,
+    cdss_7_12mo = cd7_12,
+    cdss_8_12mo = cd8_12,
+    cdss_9_12mo = cd9_12
+  )
+
+#Individual item scores for month 18
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_18mo = cd1_18,
+    cdss_2_18mo = cd2_18,
+    cdss_3_18mo = cd3_18,
+    cdss_4_18mo = cd4_18,
+    cdss_5_18mo = cd5_18,
+    cdss_6_18mo = cd6_18,
+    cdss_7_18mo = cd7_18,
+    cdss_8_18mo = cd8_18,
+    cdss_9_18mo = cd9_18
+  )
+
+#Individual item scores for month 24
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_24mo = cd1_24,
+    cdss_2_24mo = cd2_24,
+    cdss_3_24mo = cd3_24,
+    cdss_4_24mo = cd4_24,
+    cdss_5_24mo = cd5_24,
+    cdss_6_24mo = cd6_24,
+    cdss_7_24mo = cd7_24,
+    cdss_8_24mo = cd8_24,
+    cdss_9_24mo = cd9_24
+  )
+
+## Get non-na counts
+# recode 77 as NA
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(across(starts_with("cdss"), ~ replace(., . == 77, NA)))
+
+## Subset data for relevant clinical scores and non-NAs at baseline
+PEPP_cdss_subset <- PEPP_2024_12_12_IDmatched %>%
+  select(contains("pin"), contains("FEP_ID"),contains("Scan_ID"), contains("cdss_"))
+
+## Remove participants that have NA at baseline
+
+PEPP_cdss_subset <- PEPP_cdss_subset %>%
+  filter(!is.na(cdss_total_baseline))
+
+# Total global score w/o attention items (SANS)
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    sans_total_baseline = SANS_0, #total SANS score at baseline
+    sans_total_1mo = SANS_1, #total SANS score at 1-mo follow up
+    sans_total_2mo = SANS_2, #total SANS score at 2-mo follow up
+    sans_total_3mo = SANS_3, #total SANS score at 3-mo follow up
+    sans_total_6mo = SANS_6, #total SANS score at 6-mo follow up
+    sans_total_9mo = SANS_9, #total SANS score at 9-mo follow up
+    sans_total_12mo = SANS_12, #total SANS score at 12-mo follow up
+    sans_total_18mo = SANS_18, #total SANS score at 18-mo follow up
+    sans_total_24mo = SANS_24 #total SANS score at 24-mo follow up
+  )
+
+# Recoding NA
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(across(starts_with("sans"), ~ replace(., . == 77, NA)))
+
+# Subsetting
+PEPP_sans_subset <- PEPP_2024_12_12_IDmatched %>%
+  select(contains("pin"), contains("FEP_ID"),contains("Scan_ID"), contains("sans_"))
+
+## Remove participants that have NA at baseline
+
+PEPP_sans_subset <- PEPP_sans_subset %>%
+  filter(!is.na(sans_total_baseline))
+
+## Converting to Long data 
+# Total CDSS
+PEPP_cdss_long <- 
+  PEPP_cdss_subset %>%
+  select(pin, cdss_total_baseline, cdss_total_1mo, cdss_total_2mo, cdss_total_3mo,
+         cdss_total_6mo, cdss_total_9mo, cdss_total_12mo, cdss_total_18mo, 
+         cdss_total_24mo) %>%
+  pivot_longer(cols = starts_with("cdss_total_"), names_to = "time_point", values_to = "cdss_score")
+
+PEPP_cdss_long <- PEPP_cdss_long %>%
+  mutate(pin = as.numeric(pin),
+         time_point = recode(time_point,
+                             "cdss_total_baseline" = "0",
+                             "cdss_total_1mo" = "1",
+                             "cdss_total_2mo" = "2",
+                             "cdss_total_3mo" = "3",
+                             "cdss_total_6mo" = "6",
+                             "cdss_total_9mo" = "9",
+                             "cdss_total_12mo" = "12",
+                             "cdss_total_18mo" = "18",
+                             "cdss_total_24mo" = "24"),
+         time_point = as.numeric(time_point))
+
+## Removing timepoints 1 and 24 due to missingness; selecting individuals only
+## with 2 or more CDSS measurements  
+
+PEPP_cdss_long_18 <- PEPP_cdss_long %>%
+  filter(!time_point %in% c(1,24)) %>%
+  group_by(pin) %>%
+  filter(sum(!is.na(cdss_score)) >= 2) %>%
+  ungroup()
+
+# Subsetting CDSS scores into LV1 (items 1, 2, 3, 6, and 8)
+PEPP_cdss_subset <- PEPP_cdss_subset %>%
+  mutate(
+    gen_dep_comp_baseline = cdss_1_baseline + cdss_2_baseline + cdss_3_baseline + cdss_6_baseline + cdss_8_baseline,
+    gen_dep_comp_1mo = cdss_1_1mo + cdss_2_1mo + cdss_3_1mo + cdss_6_1mo + cdss_8_1mo,
+    gen_dep_comp_2mo = cdss_1_2mo + cdss_2_2mo + cdss_3_2mo + cdss_6_2mo + cdss_8_2mo,
+    gen_dep_comp_3mo = cdss_1_3mo + cdss_2_3mo + cdss_3_3mo + cdss_6_3mo + cdss_8_3mo,
+    gen_dep_comp_6mo = cdss_1_6mo + cdss_2_6mo + cdss_3_6mo + cdss_6_6mo + cdss_8_6mo,
+    gen_dep_comp_9mo = cdss_1_9mo + cdss_2_9mo + cdss_3_9mo + cdss_6_9mo + cdss_8_9mo,
+    gen_dep_comp_12mo = cdss_1_12mo + cdss_2_12mo + cdss_3_12mo + cdss_6_12mo + cdss_8_12mo,
+    gen_dep_comp_18mo = cdss_1_18mo + cdss_2_18mo + cdss_3_18mo + cdss_6_18mo + cdss_8_18mo,
+    gen_dep_comp_24mo = cdss_1_24mo + cdss_2_24mo + cdss_3_24mo + cdss_6_24mo + cdss_8_24mo
+  )
+
+# Pivot LV1 data to long format
+PEPP_LV1_long <- 
+  PEPP_cdss_subset %>%
+  select(pin, gen_dep_comp_baseline, gen_dep_comp_1mo, gen_dep_comp_2mo, gen_dep_comp_3mo,
+         gen_dep_comp_6mo, gen_dep_comp_9mo, gen_dep_comp_12mo, gen_dep_comp_18mo, gen_dep_comp_24mo) %>%
+  pivot_longer(cols = starts_with("gen_dep_comp_"), names_to = "time_point", values_to = "LV1_score")
+
+# Recode timepoints to numeric 
+
+PEPP_LV1_long <- PEPP_LV1_long %>%
+  mutate(pin = as.numeric(pin),
+         time_point = recode(time_point,
+                             "gen_dep_comp_baseline" = "0",
+                             "gen_dep_comp_1mo" = "1",
+                             "gen_dep_comp_2mo" = "2",
+                             "gen_dep_comp_3mo" = "3",
+                             "gen_dep_comp_6mo" = "6",
+                             "gen_dep_comp_9mo" = "9",
+                             "gen_dep_comp_12mo" = "12",
+                             "gen_dep_comp_18mo" = "18",
+                             "gen_dep_comp_24mo" = "24"),
+         time_point = as.numeric(time_point))
+
+# Subset to exclude data at timepoint 1 and 24 due to missingness and select
+# only participants that have 2 or more measurements
+
+PEPP_LV1_long_18 <- PEPP_LV1_long %>%
+  filter(!time_point %in% c(1,24)) %>%
+  group_by(pin) %>%
+  filter(sum(!is.na(LV1_score)) >= 2) %>%
+  ungroup()
+
+# Total SANS long format
+PEPP_sans_long <- 
+  PEPP_sans_subset %>%
+  select(pin, sans_total_baseline, sans_total_1mo, sans_total_2mo, sans_total_3mo,
+         sans_total_6mo, sans_total_9mo, sans_total_12mo, sans_total_18mo, 
+         sans_total_24mo) %>%
+  pivot_longer(cols = starts_with("sans_total_"), names_to = "time_point", values_to = "sans_score")
+
+PEPP_sans_long <- PEPP_sans_long %>%
+  mutate(pin = as.numeric(pin),
+         time_point = recode(time_point,
+                             "sans_total_baseline" = "0",
+                             "sans_total_1mo" = "1",
+                             "sans_total_2mo" = "2",
+                             "sans_total_3mo" = "3",
+                             "sans_total_6mo" = "6",
+                             "sans_total_9mo" = "9",
+                             "sans_total_12mo" = "12",
+                             "sans_total_18mo" = "18",
+                             "sans_total_24mo" = "24"),
+         time_point = as.numeric(time_point))
+
+# Subset to exclude data at timepoint 1 and 24 due to missingness and select
+# only participants that have 2 or more measurements
+
+PEPP_sans_long_18 <- PEPP_sans_long %>%
+  filter(!time_point %in% c(1,24)) %>%
+  group_by(pin) %>%
+  filter(sum(!is.na(sans_score)) >= 2) %>%
+  ungroup()
+
+# Exclude those with initial diagnosis of brief psychotic disorder (pin 473, 578)
+# Exclude those with initial diagnosis of substance-induced psychosis (pin 32, 100, 242)
+exclude_pins <- c(473, 578, 32, 100, 242)
+
+# overlap of eligible pins (LV1 and SANS), minus excluded pins
+overlap_pins <- intersect(
+  unique(PEPP_LV1_long_18$pin),
+  unique(PEPP_sans_long_18$pin)
+) %>%
+  setdiff(exclude_pins)
+
+# check
+
+length(overlap_pins)
+head(overlap_pins)
+
+# Subset data frames to exclude ineligible participants
+
+PEPP_LV1_long_18_overlap  <- PEPP_LV1_long_18  %>% filter(pin %in% overlap_pins)
+PEPP_sans_long_18_overlap <- PEPP_sans_long_18 %>% filter(pin %in% overlap_pins)
+
+
+
+c(
+  LV1_pins  = n_distinct(PEPP_LV1_long_18_overlap$pin),
+  SANS_pins = n_distinct(PEPP_sans_long_18_overlap$pin)
+)
+
+## Final data frame with participants that are eligible in both SANS and 
+## CDSS data sets 
+
+PEPP_final <- PEPP_LV1_long_18_overlap %>%
+  select(pin, time_point, LV1_score) %>%
+  inner_join(
+    PEPP_sans_long_18_overlap %>% select(pin, time_point, sans_score),
+    by = c("pin", "time_point")
+  )
+
+```
+
+## GMM2 TRAJECTORY MODELING (random intercept, random slope)
+
+```{r}
+# General depressive symptoms
+set.seed(123)
+gmm1_gen_dep <- lcmm::hlme(LV1_score ~ time_point, subject = "pin", random =~1 + 
+                              time_point, ng = 1, data = PEPP_final)
+gmm2_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_gen_dep, 
+                            m = hlme(LV1_score ~ time_point, subject = "pin",
+                                     random=~1 + time_point ,ng = 2, data = 
+                                       PEPP_final, mixture 
+                                     =~time_point, nwg = T))
+gmm3_gen_dep <- gridsearch(rep = 100, maxiter =200, minit= gmm1_gen_dep, 
+                            m = hlme(LV1_score ~ time_point, subject = "pin", 
+                                     random=~1 + time_point,
+                                     ng = 3, data = PEPP_final, mixture
+                                     =~time_point, nwg = T))
+gmm4_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_gen_dep, 
+                            m = hlme(LV1_score ~ time_point, subject = "pin", 
+                                     random=~1 + time_point,
+                                     ng = 4, data = PEPP_final, mixture
+                                     =~time_point, nwg = T))
+gmm5_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_gen_dep, 
+                            m = hlme(LV1_score ~ time_point, subject = "pin", 
+                                     random=~1 + time_point,
+                                     ng = 5, data = PEPP_LV1_long_18, mixture
+                                     =~time_point, nwg = T))
+
+mod_com_gen_dep <- summarytable(gmm1_gen_dep, gmm2_gen_dep, gmm3_gen_dep,
+                                 gmm4_gen_dep, gmm5_gen_dep)
+mod_com_gen_dep <- as.data.frame(mod_com_gen_dep)
+```
+
+Organize info from gmm 1-5 and extract class membership
+
+```{r}
+
+# Extract the model with the lowest BIC
+lowest_bic_mod_gen_dep <- which.min(mod_com_gen_dep$BIC)
+cat("The model with the lowest BIC is: gmm_", lowest_bic_mod_gen_dep, "\n")
+
+# Extract cluster assignments from each GMM model
+df1_gen_dep <- gmm1_gen_dep$pprob[,1:2] %>% rename(Class1 = class)
+df2_gen_dep <- gmm2_gen_dep$pprob[,1:2] %>% rename(Class2 = class)
+df3_gen_dep <- gmm3_gen_dep$pprob[,1:2] %>% rename(Class3 = class)
+df4_gen_dep <- gmm4_gen_dep$pprob[,1:2] %>% rename(Class4 = class)
+df5_gen_dep <- gmm5_gen_dep$pprob[,1:2] %>% rename(Class5 = class)
+
+# Merge datasets by pin
+df_gen_dep <- reduce(list(df1_gen_dep, df2_gen_dep, df3_gen_dep, df4_gen_dep,
+                          df5_gen_dep), 
+                 left_join, by = "pin")
+
+# Convert to long format
+df_long_gen_dep <- df_gen_dep %>%
+  pivot_longer(cols = starts_with("Class"), 
+               names_to = "Model", 
+               values_to = "Cluster") %>%
+  mutate(Model = as.factor(gsub("Class", "", Model)),  # Convert Model to factor
+         Cluster = as.factor(Cluster))  # Ensure Cluster is categorical
+
+# Check structure
+str(df_long_gen_dep)
+```
+
+Visualize trajectory membership
+
+```{r}
+# Set color palette based on max number of clusters
+num_clusters <- length(unique(df_long_gen_dep$Cluster))
+palette_colors <- RColorBrewer::brewer.pal(n = min(num_clusters, 12), name = "Set1")  # Use up to 12 colors
+
+# Alluvial plot
+ggplot(df_long_gen_dep, aes(x = Model, stratum = Cluster, alluvium = pin, fill = Cluster)) +
+  geom_flow(stat = "alluvium", alpha = 0.7) +  # Flow connections
+  geom_stratum(alpha = 0.8) +  # Cluster strata
+  scale_x_discrete(limits = as.character(1:4)) +  # Ensure all models appear
+  scale_fill_manual(values = palette_colors) +  # Apply custom color palette
+  labs(title = "Changes in Class Membership Across GMM Models",
+       x = "Number of Classes in Model",
+       y = "Count of Individuals") +
+  theme_minimal()
+
+probabilities_gen_dep = gmm3_gen_dep$pprob[, 3:5]
+
+heatmap_data_gen_dep <- as.matrix(probabilities_gen_dep)
+rownames(heatmap_data_gen_dep) <- gmm3_gen_dep$pprob$pin
+
+heatmap_long_gen_dep <- melt(heatmap_data_gen_dep)
+colnames(heatmap_long_gen_dep) <- c("Pin", "Class", "Probability")
+
+heatmap_long_gen_dep$Max_Prob_Class <- apply(heatmap_data_gen_dep, 1, function(x) which.max(x))
+
+heatmap_long_gen_dep$Pin <- factor(heatmap_long_gen_dep$Pin, 
+                               levels = unique(heatmap_long_gen_dep$Pin[order(heatmap_long_gen_dep$Max_Prob_Class)]))
+
+# Plot heatmap
+ggplot(heatmap_long_gen_dep, aes(x = Class, y = Pin, fill = Probability)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(title = "Soft Assignment: Membership Probabilities Heatmap", x = "Latent Class", y = "Pin") +
+  theme_minimal()
+
+trajectory_gen_dep <- as.data.frame(gmm3_gen_dep$pprob[, 1:2])
+
+PEPP_gen_dep_plotting <- PEPP_final %>%
+  left_join(trajectory_gen_dep, by = "pin") %>%   # adds `class`
+  mutate(
+    class = factor(class, levels = c(1, 2, 3),
+                   labels = c("Low", "Persistent High", "Remitting"))
+  )
+
+```
+
+Visualize trajectories
+
+```{r}
+
+# Plotting
+PEPP_gen_dep_plotting %>%
+  ggplot(aes(x = time_point, y = LV1_score, group = pin, color = class)) +
+  geom_line(alpha = 0.1, size = 0.5) +  # Make lines more transparent and thinner
+  geom_smooth(aes(group = class), method = "loess", size = 2, se = TRUE, alpha = 0.4) +  # Match SE band color with lines
+  scale_x_continuous(breaks = unique(PEPP_gen_dep_plotting$time_point)) +
+  labs(x = "Time Point (Months)", y = "LV1 Composite Score", colour = "Latent Class") +
+  geom_point(size = 1, alpha = 0.1) +  # Smaller and more transparent points
+  labs(title = "LV1 Composite Score Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  #guides(color = "none", fill = "none") +  # Remove the legend for fill (SE band)
+  scale_color_manual(values = RColorBrewer::brewer.pal(n = length(unique(PEPP_gen_dep_plotting$class)), name = "Set1")) +  # Distinct colors
+  theme_classic()
+
+# Plotting individual classes
+PEPP_gen_dep_plotting_2 %>%
+  ggplot(aes(x = time_point, y = LV1_score, group = pin, color = class)) +
+  geom_line(alpha = 0.1, size = 0.5) +  # Make lines more transparent and thinner
+  geom_smooth(aes(group = class), method = "loess", size = 2, se = TRUE, alpha = 0.4) +  # Match SE band color with lines
+  scale_x_continuous(breaks = unique(PEPP_gen_dep_plotting_2$time_point)) +
+  labs(x = "Time Point (Months)", y = "CDSS General Depressive Composite Score", colour = "Latent Class") +
+  geom_point(size = 1, alpha = 0.1) +  # Smaller and more transparent points
+  labs(title = "CDSS General Depressive Composite Score Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  #guides(color = "none", fill = "none") +  # Remove the legend for fill (SE band)
+  scale_color_manual(values = RColorBrewer::brewer.pal(n = length(unique(PEPP_gen_dep_plotting_2$class)), name = "Set1")) +  # Distinct colors
+  theme_classic()+
+  facet_wrap(~ class,ncol = 2)  # Facet by latent class
+
+```
+
+Extract posterior probabilities and calculate average posterior probability
+for random slope and random intercept LV1
+
+```{r}
+# Posterior probabilities
+pp_gmm1_gen_dep <- gmm1_gen_dep$pprob
+pp_gmm2_gen_dep <- gmm2_gen_dep$pprob
+pp_gmm3_gen_dep <- gmm3_gen_dep$pprob
+pp_gmm4_gen_dep <- gmm4_gen_dep$pprob
+pp_gmm5_gen_dep <- gmm5_gen_dep$pprob
+
+pp_gmm2_gen_dep <- gmm2_gen_dep$pprob
+
+#APP
+app2_gen_dep <- sapply(1:2, function(k) {
+  mean(pp_gmm2_gen_dep[pp_gmm2_gen_dep$class == k, paste0("prob", k)])
+})
+cat("2-class:\n")
+print(app2_gen_dep)
+
+pp_gmm3_gen_dep <- gmm3_gen_dep$pprob
+
+#APP
+
+app3_gen_dep <- sapply(1:3, function(k) {
+  mean(pp_gmm3_gen_dep[pp_gmm3_gen_dep$class == k, paste0("prob", k)])
+})
+cat("3-class:\n")
+print(app3_gen_dep)
+
+pp_gmm4_gen_dep <- gmm4_gen_dep$pprob
+
+#APP
+
+app4_gen_dep <- sapply(1:4, function(k) {
+  mean(pp_gmm4_gen_dep[pp_gmm4_gen_dep$class == k, paste0("prob", k)])
+})
+cat("4-class:\n")
+print(app4_gen_dep)
+
+pp_gmm5_gen_dep <- gmm5_gen_dep$pprob
+
+#APP
+
+app5_gen_dep <- sapply(1:5, function(k) {
+  mean(pp_gmm5_gen_dep[pp_gmm5_gen_dep$class == k, paste0("prob", k)])
+})
+cat("5-class:\n")
+print(app5_gen_dep)
+```
+
+Calculate scaled entropy for LV1 random intercept, random slope
+
+```{r}
+
+# Scaled entropy function
+scaled_entropy <- function(pprob) {
+  # Extract posterior probability columns
+  prob_cols <- grep("^prob", names(pprob), value = TRUE)
+  probs <- as.matrix(pprob[, prob_cols])
+  
+  n <- nrow(probs)
+  k <- ncol(probs)
+  
+  # Compute normalized entropy
+  raw_entropy <- -sum(probs * log(probs + 1e-12)) / (n * log(k))
+  return(round(1 - raw_entropy, 4))
+}
+
+entropy_1_gen_dep <- scaled_entropy(pp_gmm1_gen_dep)
+cat("Scaled Entropy (1-class):", entropy_1_gen_dep, "\n")
+
+entropy_2_gen_dep <- scaled_entropy(pp_gmm2_gen_dep)
+cat("Scaled Entropy (2-class):", entropy_2_gen_dep, "\n")
+
+entropy_3_gen_dep <- scaled_entropy(pp_gmm3_gen_dep)
+cat("Scaled Entropy (3-class):", entropy_3_gen_dep, "\n")
+
+entropy_4_gen_dep <- scaled_entropy(pp_gmm4_gen_dep)
+cat("Scaled Entropy (4-class):", entropy_4_gen_dep, "\n")
+
+entropy_5_gen_dep <- scaled_entropy(pp_gmm5_gen_dep)
+cat("Scaled Entropy (5-class):", entropy_5_gen_dep, "\n")
+```
+
+
+Run the GMMs for LV1 with random intercept, fixed slope
+```{r}
+set.seed(123)
+
+gmm1 <- lcmm::hlme(LV1_score ~ time_point, subject = "pin", random =~1, ng = 1, 
+                    data = PEPP_final)
+
+gmm2 <- gridsearch(rep = 100, maxiter = 200, minit= gmm1, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", random=~1,
+                             ng = 2, data = PEPP_final, mixture =~time_point, nwg = T))
+gmm3 <- gridsearch(rep = 100, maxiter = 200, minit= gmm1, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", random=~1,
+                             ng = 3, data = PEPP_final, mixture =~time_point, nwg = T))
+gmm4 <- gridsearch(rep = 100, maxiter = 200, minit= gmm1, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", random=~1,
+                             ng = 4, data = PEPP_final, mixture =~time_point, nwg = T))
+gmm5 <- gridsearch(rep = 100, maxiter = 200, minit= gmm1, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", random=~1,
+                             ng = 5, data = PEPP_final, mixture =~time_point, nwg = T))
+
+
+# nwg = T means a class-specific proportional parameter multiplies the variance
+# covariance matrix in each class
+
+#make table with results for the 5 models
+model_comparison_gmm <- summarytable(gmm1, gmm2, gmm3, gmm4, gmm5)
+model_comparison_gmm <- as.data.frame(model_comparison_gmm)
+```
+
+Scaled entropy for random intercept, fixed slope
+
+```{r}
+pp_gmm1 <- gmm1$pprob
+
+pp_gmm2 <- gmm2$pprob
+
+pp_gmm3 <- gmm3$pprob
+
+pp_gmm4 <- gmm4$pprob
+
+pp_gmm5 <- gmm5$pprob
+
+
+SE_cdss <- function(pprob) {
+  # Get only the columns with posterior probs
+  prob_cols <- grep("prob", names(pprob), value = TRUE)
+  probs <- as.matrix(pprob[, prob_cols])
+  
+  n <- nrow(probs)
+  k <- ncol(probs)
+  
+  # Avoid log(0) by adding a small constant
+  entropy_raw <- -sum(probs * log(probs + 1e-10)) / (n * log(k))
+  scaled_entropy <- 1 - entropy_raw
+  
+  return(round(scaled_entropy, 4))
+}
+
+entropy1_cdss <- SE_cdss(pp_gmm1)
+entropy2_cdss <- SE_cdss(pp_gmm2)
+entropy3_cdss <- SE_cdss(pp_gmm3)
+entropy4_cdss <- SE_cdss(pp_gmm4)
+entropy5_cdss <- SE_cdss(pp_gmm5)
+
+cat("CDSS Scaled Entropy (GMM1):", entropy1_cdss, "\n")
+cat("CDSS Scaled Entropy (GMM2):", entropy2_cdss, "\n")
+cat("CDSS Scaled Entropy (GMM3):", entropy3_cdss, "\n")
+cat("CDSS Scaled Entropy (GMM4):", entropy4_cdss, "\n")
+cat("CDSS Scaled Entropy (GMM5):", entropy5_cdss, "\n")
+```
+
+Average posterior probability for LV1 random intercept, fixed slope
+
+```{r}
+app_gmm2 <- sapply(1:2, function(k) {
+  mean(pp_gmm2[pp_gmm2$class == k, paste0("prob", k)])
+})
+
+app_gmm3 <- sapply(1:3, function(k) {
+  mean(pp_gmm3[pp_gmm3$class == k, paste0("prob", k)])
+})
+
+app_gmm4 <- sapply(1:4, function(k) {
+  mean(pp_gmm4[pp_gmm4$class == k, paste0("prob", k)])
+})
+
+app_gmm5 <- sapply(1:5, function(k) {
+  mean(pp_gmm5[pp_gmm5$class == k, paste0("prob", k)])
+})
+
+saveRDS(gmm1, "gmm1_1_lv1.RDS")
+saveRDS(gmm2, "gmm1_2_lv1.RDS")
+saveRDS(gmm3, "gmm1_3_lv1.RDS")
+saveRDS(gmm4, "gmm1_4_lv1.RDS")
+saveRDS(gmm5, "gmm1_5_lv1.RDS")
+
+```
+
+Bootstrap Likelihood Ratio Test for LV1 
+
+```{r}
+# BLRT
+gen_dep <- PEPP_LV1_long_18
+gen_dep_NA_removed <- as.data.frame(gen_dep)
+gen_dep_NA_removed <- gen_dep_NA_removed[apply(gen_dep_NA_removed, 1, 
+                                               function(row) all(is.finite(row))), ]
+
+gmm2_gen_dep <- Mclust(gen_dep_NA_removed, G = 2)
+gmm3_gen_dep <- Mclust(gen_dep_NA_removed, G = 3)
+
+# Observed LRT statistic
+LRT_obs <- 2 * (gmm3_gen_dep$loglik - gmm2_gen_dep$loglik)
+cat("Observed LRT:", LRT_obs, "\n")
+
+n_boot <- 500
+LRT_boot <- numeric(n_boot)
+set.seed(123)
+
+for (i in 1:n_boot) {
+  sim_data_gen_dep <- mclust::sim(modelName = gmm2_gen_dep$modelName,
+                          parameters = gmm2_gen_dep$parameters,
+                          n = nrow(gen_dep_NA_removed))
+  boot_data_gen_dep <- sim_data_gen_dep[, -1]
+  
+  boot_data_gen_dep <- boot_data_gen_dep[complete.cases(boot_data_gen_dep), ]
+  boot_data_gen_dep <- boot_data_gen_dep[apply(boot_data_gen_dep, 1, function(x) all(is.finite(x))), ]
+  
+  if (nrow(boot_data_gen_dep) < 5) {
+    LRT_boot[i] <- NA
+    next
+  }
+  
+  boot_gmm2_gen_dep <- Mclust(boot_data_gen_dep, G = 2, verbose = FALSE)
+  boot_gmm3_gen_dep <- Mclust(boot_data_gen_dep, G = 3, verbose = FALSE)
+  
+  LRT_boot[i] <- 2 * (boot_gmm3_gen_dep$loglik - boot_gmm2_gen_dep$loglik)
+}
+
+LRT_boot <- LRT_boot[!is.na(LRT_boot)]
+p_value <- mean(LRT_boot >= LRT_obs)
+cat("Bootstrap p-value (general depressive):", p_value, "\n")
+
+```
+
+SANS GMM (random slope, random intercept)
+
+```{r}
+# SANS Negative symptoms
+set.seed(123)
+
+gmm1_sans <- lcmm::hlme(sans_score ~ time_point, subject = "pin", random =~1 + 
+                               time_point, ng = 1, data = PEPP_final)
+gmm2_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                             m = hlme(sans_score ~ time_point, subject = "pin",
+                                      random=~1 + time_point ,ng = 2, data = 
+                                        PEPP_final, mixture 
+                                      =~time_point, nwg = T))
+gmm3_sans <- gridsearch(rep = 100, maxiter =200, minit= gmm1_sans, 
+                             m = hlme(sans_score ~ time_point, subject = "pin", 
+                                      random=~1 + time_point,
+                                      ng = 3, data = PEPP_final, mixture
+                                      =~time_point, nwg = T))
+gmm4_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                             m = hlme(sans_score ~ time_point, subject = "pin", 
+                                      random=~1 + time_point,
+                                      ng = 4, data = PEPP_final, mixture
+                                      =~time_point, nwg = T))
+gmm5_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                             m = hlme(sans_score ~ time_point, subject = "pin", 
+                                      random=~1 + time_point,
+                                      ng = 5, data = PEPP_final, mixture
+                                      =~time_point, nwg = T))
+
+mod_com_sans <- summarytable(gmm1_sans, gmm2_sans, gmm3_sans, gmm4_sans,
+                                  gmm5_sans)
+mod_com_sans <- as.data.frame(mod_com_sans)
+```
+
+# Extract the model with the lowest BIC
+
+```{r}
+lowest_bic_mod_sans <- which.min(mod_com_sans$BIC)
+cat("The model with the lowest BIC is: gmm_", lowest_bic_mod_sans, "\n")
+
+```
+
+Extract cluster assignments from each GMM model
+```{r}
+df1_sans <- gmm1_sans$pprob[,1:2] %>% rename(Class1 = class)
+df2_sans <- gmm2_sans$pprob[,1:2] %>% rename(Class2 = class)
+df3_sans <- gmm3_sans$pprob[,1:2] %>% rename(Class3 = class)
+df4_sans <- gmm4_sans$pprob[,1:2] %>% rename(Class4 = class)
+df5_sans <- gmm5_sans$pprob[,1:2] %>% rename(Class5 = class)
+
+# Merge datasets by pin
+df_sans <- reduce(list(df1_sans, df2_sans, df3_sans, df4_sans, df5_sans), 
+                  left_join, by = "pin")
+
+# Convert to long format
+df_long_sans <- df_sans %>%
+  pivot_longer(cols = starts_with("Class"), 
+               names_to = "Model", 
+               values_to = "Cluster") %>%
+  mutate(Model = as.factor(gsub("Class", "", Model)),  # Convert Model to factor
+         Cluster = as.factor(Cluster))  # Ensure Cluster is categorical
+
+# Check structure
+str(df_long_sans)
+```
+
+Visualize class membership 
+
+```{r}
+
+num_clusters <- length(unique(df_long_sans$Cluster))
+palette_colors <- RColorBrewer::brewer.pal(n = min(num_clusters, 12), name = "Set1") 
+
+# Alluvial plot
+ggplot(df_long_sans, aes(x = Model, stratum = Cluster, alluvium = pin, fill = Cluster)) +
+  geom_flow(stat = "alluvium", alpha = 0.7) +  # Flow connections
+  geom_stratum(alpha = 0.8) +  # Cluster strata
+  scale_x_discrete(limits = as.character(1:4)) +  # Ensure all models appear
+  scale_fill_manual(values = palette_colors) +  # Apply custom color palette
+  labs(title = "Changes in Class Membership Across GMM Models",
+       x = "Number of Classes in Model",
+       y = "Count of Individuals") +
+  theme_minimal()
+
+probabilities_sans = gmm3_sans$pprob[, 3:4]
+
+heatmap_data_sans <- as.matrix(probabilities_sans)
+rownames(heatmap_data_sans) <- gmm3_sans$pprob$pin
+
+heatmap_long_sans <- melt(heatmap_data_sans)
+colnames(heatmap_long_sans) <- c("Pin", "Class", "Probability")
+
+heatmap_long_sans$Max_Prob_Class <- apply(heatmap_data_sans, 1, function(x) which.max(x))
+
+heatmap_long_sans$Pin <- factor(heatmap_long_sans$Pin, 
+                                levels = unique(heatmap_long_sans$Pin[order(heatmap_long_sans$Max_Prob_Class)]))
+
+# Plot heatmap
+ggplot(heatmap_long_sans, aes(x = Class, y = Pin, fill = Probability)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(title = "Soft Assignment: Membership Probabilities Heatmap", x = "Latent Class", y = "Pin") +
+  theme_minimal()
+```
+
+Visualize trajectories
+
+```{r}
+trajectory_sans <- as.data.frame(gmm3_sans$pprob[, 1:2])
+
+PEPP_sans_plotting <- PEPP_final %>%
+  left_join(trajectory_sans, by = "pin") %>%
+  mutate(
+    class = factor(class, levels = c(1, 2, 3),
+                   labels = c("Low", "Persistent High", "Remitting"))
+  )
+
+# Plotting
+PEPP_sans_plotting %>%
+  ggplot(aes(x = time_point, y = sans_score, group = pin, color = class)) +
+  geom_line(alpha = 0.1, size = 0.5) +  # Make lines more transparent and thinner
+  geom_smooth(aes(group = class), method = "loess", size = 2, se = TRUE, alpha = 0.4) +  # Match SE band color with lines
+  scale_x_continuous(breaks = unique(PEPP_sans_plotting$time_point)) +
+  labs(x = "Time Point (Months)", y = "SANS Negative Symptom Composite Score", colour = "Latent Class") +
+  geom_point(size = 1, alpha = 0.1) +  # Smaller and more transparent points
+  labs(title = "SANS Negative Symptom Composite Score Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  #guides(color = "none", fill = "none") +  # Remove the legend for fill (SE band)
+  scale_color_manual(values = RColorBrewer::brewer.pal(n = length(unique(PEPP_sans_plotting$class)), name = "Set1")) +  # Distinct colors
+  theme_classic()
+
+# Plotting individual classes
+PEPP_sans_plotting_2 %>%
+  ggplot(aes(x = time_point, y = LV1_score, group = pin, color = class)) +
+  geom_line(alpha = 0.1, size = 0.5) +  # Make lines more transparent and thinner
+  geom_smooth(aes(group = class), method = "loess", size = 2, se = TRUE, alpha = 0.4) +  # Match SE band color with lines
+  scale_x_continuous(breaks = unique(PEPP_sans_plotting_2$time_point)) +
+  labs(x = "Time Point (Months)", y = "SANS Negative Symptom Composite Score", colour = "Latent Class") +
+  geom_point(size = 1, alpha = 0.1) +  # Smaller and more transparent points
+  labs(title = "SANS Negative Symptom Composite Score Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  #guides(color = "none", fill = "none") +  # Remove the legend for fill (SE band)
+  scale_color_manual(values = RColorBrewer::brewer.pal(n = length(unique(PEPP_sans_plotting_2$class)), name = "Set1")) +  # Distinct colors
+  theme_classic()+
+  facet_wrap(~ class,ncol = 2)  # Facet by latent class
+```
+
+SANS random slope and random intercept fit statistics 
+
+```{r}
+# Posterior probabilities and average posterior probabilities 
+pp_gmm2_sans <- gmm2_sans$pprob
+pp_gmm3_sans <- gmm3_sans$pprob
+pp_gmm4_sans <- gmm4_sans$pprob
+pp_gmm5_sans <- gmm5_sans$pprob
+
+pp_gmm2_sans <- gmm2_sans$pprob
+app2_sans <- sapply(1:2, function(k) {
+  mean(pp_gmm2_sans[pp_gmm2_sans$class == k, paste0("prob", k)])
+})
+cat("2-class:\n")
+print(app2_sans)
+
+pp_gmm3_sans <- gmm3_sans$pprob
+app3_sans <- sapply(1:3, function(k) {
+  mean(pp_gmm3_sans[pp_gmm3_sans$class == k, paste0("prob", k)])
+})
+cat("3-class:\n")
+print(app3_sans)
+
+pp_gmm4_sans <- gmm4_sans$pprob
+app4_sans <- sapply(1:4, function(k) {
+  mean(pp_gmm4_sans[pp_gmm4_sans$class == k, paste0("prob", k)])
+})
+cat("4-class:\n")
+print(app4_sans)
+
+pp_gmm5_sans <- gmm5_sans$pprob
+app5_sans <- sapply(1:5, function(k) {
+  mean(pp_gmm5_sans[pp_gmm5_sans$class == k, paste0("prob", k)])
+})
+cat("5-class:\n")
+print(app5_sans)
+```
+
+Scaled entropy for SANS random slope random intercept
+
+```{r}
+scaled_entropy <- function(pprob) {
+  # Extract posterior probability columns
+  prob_cols <- grep("^prob", names(pprob), value = TRUE)
+  probs <- as.matrix(pprob[, prob_cols])
+  
+  n <- nrow(probs)
+  k <- ncol(probs)
+  
+  # Compute normalized entropy
+  raw_entropy <- -sum(probs * log(probs + 1e-12)) / (n * log(k))
+  return(round(1 - raw_entropy, 4))
+}
+
+entropy_sans2 <- scaled_entropy(pp_gmm2_sans)
+cat("Scaled Entropy (2-class):", entropy_sans2, "\n")
+
+entropy_sans3 <- scaled_entropy(pp_gmm3_sans)
+cat("Scaled Entropy (3-class):", entropy_sans3, "\n")
+
+entropy_sans4 <- scaled_entropy(pp_gmm4_sans)
+cat("Scaled Entropy (4-class):", entropy_sans4, "\n")
+
+entropy_sans5 <- scaled_entropy(pp_gmm5_sans)
+cat("Scaled Entropy (5-class):", entropy_sans5, "\n")
+```
+
+
+SANS GMM (fixed slope, random intercept)
+
+```{r}
+set.seed(123)
+
+gmm1_sans <- lcmm::hlme(sans_score ~ time_point, subject = "pin", random =~1, ng = 1, 
+                    data = PEPP_final)
+
+gmm2_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", random=~1,
+                             ng = 2, data = PEPP_final, mixture =~time_point, nwg = T))
+gmm3_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", random=~1,
+                             ng = 3, data = PEPP_final, mixture =~time_point, nwg = T))
+gmm4_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", random=~1,
+                             ng = 4, data = PEPP_final, mixture =~time_point, nwg = T))
+gmm5_sans <- gridsearch(rep = 100, maxiter = 200, minit= gmm1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", random=~1,
+                             ng = 5, data = PEPP_final, mixture =~time_point, nwg = T))
+
+
+# nwg = T means a class-specific proportional parameter multiplies the variance
+# covariance matrix in each class
+
+#make table with results for the 6 models
+model_comparison_gmm_sans <- summarytable(gmm1_sans, gmm2_sans, gmm3_sans, gmm4_sans, gmm5_sans)
+model_comparison_gmm_sans <- as.data.frame(model_comparison_gmm_sans)
+
+saveRDS(gmm1_sans, "gmm1_sans.RDS")
+saveRDS(gmm2_sans, "gmm2_sans.RDS")
+saveRDS(gmm3_sans, "gmm3_sans.RDS")
+saveRDS(gmm4_sans, "gmm4_sans.RDS")
+saveRDS(gmm5_sans, "gmm5_sans.RDS")
+
+```
+
+Scaled entropy for SANS fixed slope, random intercept 
+
+```{r}
+pp_gmm1_sans <- gmm1_sans$pprob
+
+pp_gmm2_sans <- gmm2_sans$pprob
+
+pp_gmm3_sans <- gmm3_sans$pprob
+
+pp_gmm4_sans <- gmm4_sans$pprob
+
+pp_gmm5_sans <- gmm5_sans$pprob
+
+
+SE_sans<- function(pprob) {
+  # Get only the columns with posterior probs
+  prob_cols <- grep("prob", names(pprob), value = TRUE)
+  probs <- as.matrix(pprob[, prob_cols])
+  
+  n <- nrow(probs)
+  k <- ncol(probs)
+  
+  # Avoid log(0) by adding a small constant
+  entropy_raw <- -sum(probs * log(probs + 1e-10)) / (n * log(k))
+  scaled_entropy <- 1 - entropy_raw
+  
+  return(round(scaled_entropy, 4))
+}
+
+entropy1_sans <- SE_sans(pp_gmm1_sans)
+entropy2_sans <- SE_sans(pp_gmm2_sans)
+entropy3_sans <- SE_sans(pp_gmm3_sans)
+entropy4_sans <- SE_sans(pp_gmm4_sans)
+entropy5_sans <- SE_sans(pp_gmm5_sans)
+
+cat("SANS Scaled Entropy (GMM1):", entropy1_sans, "\n")
+cat("SANS Scaled Entropy (GMM2):", entropy2_sans, "\n")
+cat("SANS Scaled Entropy (GMM3):", entropy3_sans, "\n")
+cat("SANS Scaled Entropy (GMM4):", entropy4_sans, "\n")
+cat("SANS Scaled Entropy (GMM5):", entropy5_sans, "\n")
+```
+
+Average posterior probability for SANS random slope, fixed intercept
+
+```{r}
+app_gmm2_sans <- sapply(1:2, function(k) {
+  mean(pp_gmm2_sans[pp_gmm2_sans$class == k, paste0("prob", k)])
+})
+
+app_gmm3_sans <- sapply(1:3, function(k) {
+  mean(pp_gmm3_sans[pp_gmm3_sans$class == k, paste0("prob", k)])
+})
+
+app_gmm4_sans <- sapply(1:4, function(k) {
+  mean(pp_gmm4_sans[pp_gmm4_sans$class == k, paste0("prob", k)])
+})
+
+app_gmm5_sans <- sapply(1:5, function(k) {
+  mean(pp_gmm5_sans[pp_gmm5_sans$class == k, paste0("prob", k)])
+})
+
+app_gmm2_sans
+app_gmm3_sans
+app_gmm4_sans
+app_gmm5_sans
+
+```
+
+Boostrap Likelihood Ratio Test for SANS 
+
+```{r}
+
+sans <- PEPP_sans_long_18
+sans_NA_removed <- as.data.frame(sans)
+sans_NA_removed <- sans_NA_removed[apply(sans_NA_removed, 1, 
+                                               function(row) all(is.finite(row))), ]
+
+gmm2_sans <- Mclust(sans_NA_removed, G = 2)
+gmm3_sans <- Mclust(sans_NA_removed, G = 3)
+
+# Observed LRT statistic
+LRT_obs <- 2 * (gmm3_sans$loglik - gmm2_sans$loglik)
+cat("Observed LRT:", LRT_obs, "\n")
+
+n_boot <- 500
+LRT_boot <- numeric(n_boot)
+set.seed(123)
+
+for (i in 1:n_boot) {
+  sim_data_sans <- mclust::sim(modelName = gmm2_sans$modelName,
+                                  parameters = gmm2_sans$parameters,
+                                  n = nrow(sans_NA_removed))
+  boot_data_sans <- sim_data_sans[, -1]
+  
+  boot_data_sans <- boot_data_sans[complete.cases(boot_data_sans), ]
+  boot_data_sans <- boot_data_sans[apply(boot_data_sans, 1, function(x) all(is.finite(x))), ]
+  
+  if (nrow(boot_data_sans) < 5) {
+    LRT_boot[i] <- NA
+    next
+  }
+  
+  boot_gmm2_sans <- Mclust(boot_data_sans, G = 2, verbose = FALSE)
+  boot_gmm3_sans <- Mclust(boot_data_sans, G = 3, verbose = FALSE)
+  
+  LRT_boot[i] <- 2 * (boot_gmm3_sans$loglik - boot_gmm2_sans$loglik)
+}
+
+LRT_boot <- LRT_boot[!is.na(LRT_boot)]
+p_value <- mean(LRT_boot >= LRT_obs)
+cat("Bootstrap p-value (negative):", p_value, "\n")
+
+```
+
+

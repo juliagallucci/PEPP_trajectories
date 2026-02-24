@@ -1,0 +1,739 @@
+---
+title: "LCGA"
+author: "Julia Gallucci, Alyssa Qian, and Sierra Vaillancourt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(psych)
+library(nFactors)
+library(lcmm)
+library(RColorBrewer)
+library(ggalluvial)
+library(reshape2)
+```
+
+```{r}
+
+PEPP_2024_12_12_IDmatched <- read_sav("PEPP_2024-12-12-IDmatched.sav")
+
+#Total CDSS Scores
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_total_baseline = CDS_0, #total cds score at baseline
+    cdss_total_1mo = CDS_1, #total cds score at 1-mo follow up
+    cdss_total_2mo = CDS_2, #total cds score at 2-mo follow up
+    cdss_total_3mo = CDS_3, #total cds score at 3-mo follow up
+    cdss_total_6mo = CDS_6, #total cds score at 6-mo follow up
+    cdss_total_9mo = CDS_9, #total cds score at 9-mo follow up
+    cdss_total_12mo = CDS_12, #total cds score at 12-mo follow up
+    cdss_total_18mo = CDS_18, #total cds score at 18-mo follow up
+    cdss_total_24mo = CDS_24 #total cds score at 24-mo follow up
+  )
+
+#Individual item scores for baseline
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_baseline = cd1_0,
+    cdss_2_baseline = cd2_0,
+    cdss_3_baseline = cd3_0,
+    cdss_4_baseline = cd4_0,
+    cdss_5_baseline = cd5_0,
+    cdss_6_baseline = cd6_0,
+    cdss_7_baseline = cd7_0,
+    cdss_8_baseline = cd8_0,
+    cdss_9_baseline = cd9_0
+  )
+
+#Individual item scores for month 1
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_1mo = cd1_1,
+    cdss_2_1mo = cd2_1,
+    cdss_3_1mo = cd3_1,
+    cdss_4_1mo = cd4_1,
+    cdss_5_1mo = cd5_1,
+    cdss_6_1mo = cd6_1,
+    cdss_7_1mo = cd7_1,
+    cdss_8_1mo = cd8_1,
+    cdss_9_1mo = cd9_1
+  )
+
+#Individual item scores for month 2
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_2mo = cd1_2,
+    cdss_2_2mo = cd2_2,
+    cdss_3_2mo = cd3_2,
+    cdss_4_2mo = cd4_2,
+    cdss_5_2mo = cd5_2,
+    cdss_6_2mo = cd6_2,
+    cdss_7_2mo = cd7_2,
+    cdss_8_2mo = cd8_2,
+    cdss_9_2mo = cd9_2
+  )
+
+#Individual item scores for month 3
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_3mo = cd1_3,
+    cdss_2_3mo = cd2_3,
+    cdss_3_3mo = cd3_3,
+    cdss_4_3mo = cd4_3,
+    cdss_5_3mo = cd5_3,
+    cdss_6_3mo = cd6_3,
+    cdss_7_3mo = cd7_3,
+    cdss_8_3mo = cd8_3,
+    cdss_9_3mo = cd9_3
+  )
+
+#Individual item scores for month 6
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_6mo = cd1_6,
+    cdss_2_6mo = cd2_6,
+    cdss_3_6mo = cd3_6,
+    cdss_4_6mo = cd4_6,
+    cdss_5_6mo = cd5_6,
+    cdss_6_6mo = cd6_6,
+    cdss_7_6mo = cd7_6,
+    cdss_8_6mo = cd8_6,
+    cdss_9_6mo = cd9_6
+  )
+
+#Individual item scores for month 9
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_9mo = cd1_9,
+    cdss_2_9mo = cd2_9,
+    cdss_3_9mo = cd3_9,
+    cdss_4_9mo = cd4_9,
+    cdss_5_9mo = cd5_9,
+    cdss_6_9mo = cd6_9,
+    cdss_7_9mo = cd7_9,
+    cdss_8_9mo = cd8_9,
+    cdss_9_9mo = cd9_9
+  )
+
+#Individual item scores for month 12
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_12mo = cd1_12,
+    cdss_2_12mo = cd2_12,
+    cdss_3_12mo = cd3_12,
+    cdss_4_12mo = cd4_12,
+    cdss_5_12mo = cd5_12,
+    cdss_6_12mo = cd6_12,
+    cdss_7_12mo = cd7_12,
+    cdss_8_12mo = cd8_12,
+    cdss_9_12mo = cd9_12
+  )
+
+#Individual item scores for month 18
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_18mo = cd1_18,
+    cdss_2_18mo = cd2_18,
+    cdss_3_18mo = cd3_18,
+    cdss_4_18mo = cd4_18,
+    cdss_5_18mo = cd5_18,
+    cdss_6_18mo = cd6_18,
+    cdss_7_18mo = cd7_18,
+    cdss_8_18mo = cd8_18,
+    cdss_9_18mo = cd9_18
+  )
+
+#Individual item scores for month 24
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    cdss_1_24mo = cd1_24,
+    cdss_2_24mo = cd2_24,
+    cdss_3_24mo = cd3_24,
+    cdss_4_24mo = cd4_24,
+    cdss_5_24mo = cd5_24,
+    cdss_6_24mo = cd6_24,
+    cdss_7_24mo = cd7_24,
+    cdss_8_24mo = cd8_24,
+    cdss_9_24mo = cd9_24
+  )
+
+## Get non-na counts
+# recode 77 as NA
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(across(starts_with("cdss"), ~ replace(., . == 77, NA)))
+
+## Subset data for relevant clinical scores and non-NAs at baseline
+PEPP_cdss_subset <- PEPP_2024_12_12_IDmatched %>%
+  select( contains("pin"), contains("FEP_ID"),contains("Scan_ID"), contains("cdss_"))
+
+## Check 
+
+colnames(PEPP_cdss_subset)
+
+## Remove participants with no baseline measurements
+
+PEPP_cdss_subset <- PEPP_cdss_subset %>%
+  filter(!is.na(cdss_total_baseline))
+
+#Total global score w/o attention items
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  rename(
+    sans_total_baseline = SANS_0, #total SANS score at baseline
+    sans_total_1mo = SANS_1, #total SANS score at 1-mo follow up
+    sans_total_2mo = SANS_2, #total SANS score at 2-mo follow up
+    sans_total_3mo = SANS_3, #total SANS score at 3-mo follow up
+    sans_total_6mo = SANS_6, #total SANS score at 6-mo follow up
+    sans_total_9mo = SANS_9, #total SANS score at 9-mo follow up
+    sans_total_12mo = SANS_12, #total SANS score at 12-mo follow up
+    sans_total_18mo = SANS_18, #total SANS score at 18-mo follow up
+    sans_total_24mo = SANS_24 #total SANS score at 24-mo follow up
+  )
+
+# Recoding NA
+PEPP_2024_12_12_IDmatched <- PEPP_2024_12_12_IDmatched %>%
+  mutate(across(starts_with("sans"), ~ replace(., . == 77, NA)))
+
+# Subsetting
+PEPP_sans_subset <- PEPP_2024_12_12_IDmatched %>%
+  select( contains("pin"), contains("FEP_ID"),contains("Scan_ID"), contains("sans_"))
+
+colnames(PEPP_sans_subset)
+
+## Remove participants with no baseline measurements
+
+
+PEPP_sans_subset <- PEPP_sans_subset %>%
+  filter(!is.na(sans_total_baseline))
+
+## Converting to Long data 
+
+# Total CDSS
+PEPP_cdss_long <- 
+  PEPP_cdss_subset %>%
+  select(pin, cdss_total_baseline, cdss_total_1mo, cdss_total_2mo, cdss_total_3mo,
+         cdss_total_6mo, cdss_total_9mo, cdss_total_12mo, cdss_total_18mo, 
+         cdss_total_24mo) %>%
+  pivot_longer(cols = starts_with("cdss_total_"), names_to = "time_point", values_to = "cdss_score")
+
+PEPP_cdss_long <- PEPP_cdss_long %>%
+  mutate(pin = as.numeric(pin),
+         time_point = recode(time_point,
+                             "cdss_total_baseline" = "0",
+                             "cdss_total_1mo" = "1",
+                             "cdss_total_2mo" = "2",
+                             "cdss_total_3mo" = "3",
+                             "cdss_total_6mo" = "6",
+                             "cdss_total_9mo" = "9",
+                             "cdss_total_12mo" = "12",
+                             "cdss_total_18mo" = "18",
+                             "cdss_total_24mo" = "24"),
+         time_point = as.numeric(time_point))
+
+## Removing timepoints 1 and 24 due to missingness and removing participants
+## with less than 2 measurements 
+
+PEPP_cdss_long_18 <- PEPP_cdss_long %>%
+  filter(!time_point %in% c(1,24)) %>%
+  group_by(pin) %>%
+  filter(sum(!is.na(cdss_score)) >= 2) %>%
+  ungroup()
+
+# Subsetting CDSS scores into LV1
+PEPP_cdss_subset <- PEPP_cdss_subset %>%
+  mutate(
+    gen_dep_comp_baseline = cdss_1_baseline + cdss_2_baseline + cdss_3_baseline + cdss_6_baseline + cdss_8_baseline,
+    gen_dep_comp_1mo = cdss_1_1mo + cdss_2_1mo + cdss_3_1mo + cdss_6_1mo + cdss_8_1mo,
+    gen_dep_comp_2mo = cdss_1_2mo + cdss_2_2mo + cdss_3_2mo + cdss_6_2mo + cdss_8_2mo,
+    gen_dep_comp_3mo = cdss_1_3mo + cdss_2_3mo + cdss_3_3mo + cdss_6_3mo + cdss_8_3mo,
+    gen_dep_comp_6mo = cdss_1_6mo + cdss_2_6mo + cdss_3_6mo + cdss_6_6mo + cdss_8_6mo,
+    gen_dep_comp_9mo = cdss_1_9mo + cdss_2_9mo + cdss_3_9mo + cdss_6_9mo + cdss_8_9mo,
+    gen_dep_comp_12mo = cdss_1_12mo + cdss_2_12mo + cdss_3_12mo + cdss_6_12mo + cdss_8_12mo,
+    gen_dep_comp_18mo = cdss_1_18mo + cdss_2_18mo + cdss_3_18mo + cdss_6_18mo + cdss_8_18mo,
+    gen_dep_comp_24mo = cdss_1_24mo + cdss_2_24mo + cdss_3_24mo + cdss_6_24mo + cdss_8_24mo
+  )
+
+# LV1
+PEPP_LV1_long <- 
+  PEPP_cdss_subset %>%
+  select(pin, gen_dep_comp_baseline, gen_dep_comp_1mo, gen_dep_comp_2mo, gen_dep_comp_3mo,
+         gen_dep_comp_6mo, gen_dep_comp_9mo, gen_dep_comp_12mo, gen_dep_comp_18mo, gen_dep_comp_24mo) %>%
+  pivot_longer(cols = starts_with("gen_dep_comp_"), names_to = "time_point", values_to = "LV1_score")
+
+PEPP_LV1_long <- PEPP_LV1_long %>%
+  mutate(pin = as.numeric(pin),
+         time_point = recode(time_point,
+                             "gen_dep_comp_baseline" = "0",
+                             "gen_dep_comp_1mo" = "1",
+                             "gen_dep_comp_2mo" = "2",
+                             "gen_dep_comp_3mo" = "3",
+                             "gen_dep_comp_6mo" = "6",
+                             "gen_dep_comp_9mo" = "9",
+                             "gen_dep_comp_12mo" = "12",
+                             "gen_dep_comp_18mo" = "18",
+                             "gen_dep_comp_24mo" = "24"),
+         time_point = as.numeric(time_point))
+
+PEPP_LV1_long_18 <- PEPP_LV1_long %>%
+  filter(!time_point %in% c(1,24)) %>%
+  group_by(pin) %>%
+  filter(sum(!is.na(LV1_score)) >= 2) %>%
+  ungroup()
+
+# Total SANS
+PEPP_sans_long <- 
+  PEPP_sans_subset %>%
+  select(pin, sans_total_baseline, sans_total_1mo, sans_total_2mo, sans_total_3mo,
+         sans_total_6mo, sans_total_9mo, sans_total_12mo, sans_total_18mo, 
+         sans_total_24mo) %>%
+  pivot_longer(cols = starts_with("sans_total_"), names_to = "time_point", values_to = "sans_score")
+
+PEPP_sans_long <- PEPP_sans_long %>%
+  mutate(pin = as.numeric(pin),
+         time_point = recode(time_point,
+                             "sans_total_baseline" = "0",
+                             "sans_total_1mo" = "1",
+                             "sans_total_2mo" = "2",
+                             "sans_total_3mo" = "3",
+                             "sans_total_6mo" = "6",
+                             "sans_total_9mo" = "9",
+                             "sans_total_12mo" = "12",
+                             "sans_total_18mo" = "18",
+                             "sans_total_24mo" = "24"),
+         time_point = as.numeric(time_point))
+
+PEPP_sans_long_18 <- PEPP_sans_long %>%
+  filter(!time_point %in% c(1,24)) %>%
+  group_by(pin) %>%
+  filter(sum(!is.na(sans_score)) >= 2) %>%
+  ungroup()
+
+# Exclude those with initial diagnosis of brief psychotic disorder (pin 473, 578)
+# Exclude those with initial diagnosis of substance-induced psychosis (pin 32, 100, 242)
+exclude_pins <- c(473, 578, 32, 100, 242)
+
+# overlap of eligible pins (LV1 and SANS), minus excluded pins
+overlap_pins <- intersect(
+  unique(PEPP_LV1_long_18$pin),
+  unique(PEPP_sans_long_18$pin)
+) %>%
+  setdiff(exclude_pins)
+length(overlap_pins)
+head(overlap_pins)
+
+PEPP_LV1_long_18_overlap  <- PEPP_LV1_long_18  %>% filter(pin %in% overlap_pins)
+PEPP_sans_long_18_overlap <- PEPP_sans_long_18 %>% filter(pin %in% overlap_pins)
+
+c(
+  LV1_pins  = n_distinct(PEPP_LV1_long_18_overlap$pin),
+  SANS_pins = n_distinct(PEPP_sans_long_18_overlap$pin)
+)
+
+PEPP_final <- PEPP_LV1_long_18_overlap %>%
+  select(pin, time_point, LV1_score) %>%
+  inner_join(
+    PEPP_sans_long_18_overlap %>% select(pin, time_point, sans_score),
+    by = c("pin", "time_point")
+  )
+```
+
+```{r}
+
+# LCGA Trajectory Modeling with Fit Statistics (General Depressive Symptoms (LV1))
+set.seed(123)
+
+lcga1_gen_dep <- lcmm::hlme(LV1_score ~ time_point, subject = "pin", ng = 1, data = PEPP_final)
+lcga2_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_gen_dep, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", ng = 2, 
+                             data = PEPP_final, mixture =~time_point))
+lcga3_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_gen_dep, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", ng = 3, 
+                             data = PEPP_final, mixture =~time_point))
+lcga4_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_gen_dep, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", ng = 4, 
+                             data = PEPP_final, mixture =~time_point))
+lcga5_gen_dep <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_gen_dep, 
+                    m = hlme(LV1_score ~ time_point, subject = "pin", ng = 5, 
+                             data = PEPP_final, mixture =~time_point))
+
+model_comparison_gen_dep <- summarytable(lcga1_gen_dep, lcga2_gen_dep, 
+                                         lcga3_gen_dep, lcga4_gen_dep, 
+                                         lcga5_gen_dep)
+
+model_comparison_gen_dep <- as.data.frame(model_comparison_gen_dep)
+
+lowest_bic_model <- which.min(model_comparison_gen_dep$BIC)
+cat("The model with the lowest BIC is: lcga", lowest_bic_model, "\n")
+
+# Extract cluster assignments from each LCGA model
+df1_gen_dep <- lcga1_gen_dep$pprob[,1:2] %>% rename(Class1 = class)
+df2_gen_dep <- lcga2_gen_dep$pprob[,1:2] %>% rename(Class2 = class)
+df3_gen_dep <- lcga3_gen_dep$pprob[,1:2] %>% rename(Class3 = class)
+df4_gen_dep <- lcga4_gen_dep$pprob[,1:2] %>% rename(Class4 = class)
+df5_gen_dep <- lcga5_gen_dep$pprob[,1:2] %>% rename(Class5 = class)
+
+# Merge datasets by pin
+df_gen_dep <- reduce(list(df1_gen_dep, df2_gen_dep, df3_gen_dep, df4_gen_dep, 
+                          df5_gen_dep), left_join, by = "pin")
+
+# Convert to long format
+df_long_gen_dep <- df_gen_dep %>%
+  pivot_longer(cols = starts_with("Class"), 
+               names_to = "Model", 
+               values_to = "Cluster") %>%
+  mutate(Model = as.factor(gsub("Class", "", Model)),  # Convert Model to factor
+         Cluster = as.factor(Cluster))  # Ensure Cluster is categorical
+
+# Check structure
+str(df_long_gen_dep)
+```
+
+Visualize class membership
+
+```{r}
+# Set color palette based on max number of clusters
+num_clusters <- length(unique(df_long_gen_dep$Cluster))
+palette_colors <- RColorBrewer::brewer.pal(n = min(num_clusters, 12), 
+                                           name = "Set1")  # Use up to 12 colors
+
+# Alluvial plot
+ggplot(df_long_gen_dep, aes(x = Model, stratum = Cluster, alluvium = pin, fill = Cluster)) +
+  geom_flow(stat = "alluvium", alpha = 0.7) +  # Flow connections
+  geom_stratum(alpha = 0.8) +  # Cluster strata
+  scale_x_discrete(limits = as.character(1:5)) +  # Ensure all models appear
+  scale_fill_manual(values = palette_colors) +  # Apply custom color palette
+  labs(title = "Changes in General Depressive Symptom Class Membership Across LCGA Models",
+       x = "Number of Classes in Model",
+       y = "Count of Individuals") +
+  theme_minimal()
+
+# Extract probabilities from the lcga model
+probabilities = lcga3_gen_dep$pprob[, 3:5]
+
+# Convert to matrix for headman
+heatmap_data <- as.matrix(probabilities)
+rownames(heatmap_data) <- lcga3_gen_dep$pprob$pin
+
+# Melt the matrix to long format
+heatmap_long <- melt(heatmap_data)
+colnames(heatmap_long) <- c("Pin", "Class", "Probability")
+
+# Determine the class with the highest probability for each individual (Pin)
+heatmap_long$Max_Prob_Class <- apply(heatmap_data, 1, function(x) which.max(x))
+heatmap_long$Pin <- factor(heatmap_long$Pin, 
+                           levels = unique(heatmap_long$Pin[order(heatmap_long$Max_Prob_Class)]))
+ggplot(heatmap_long, aes(x = Class, y = Pin, fill = Probability)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(title = "Soft Assignment: Membership Probabilities Heatmap", x = "Latent Class", y = "Pin") +
+  theme_minimal()
+trajectory <- as.data.frame(lcga3_gen_dep$pprob[, 1:2]) #best fit model
+
+# trajectory has class labels for each pin, merge them into PEPP_cdss data
+PEPP_gen_dep_plotting <- PEPP_final %>%
+  left_join(trajectory, by = "pin") %>%
+  mutate(class = factor(class)) 
+```
+
+Visualize trajectories
+
+```{r}
+# Plotting
+PEPP_gen_dep_plotting %>%
+  ggplot(aes(x = time_point, y = LV1_score, group = pin, color = class)) +
+  geom_line(alpha = 0.1, size = 0.5) +  # Make lines more transparent and thinner
+  geom_smooth(aes(group = class), method = "loess", size = 2, se = TRUE, alpha = 0.4) +  # Match SE band color with lines
+  scale_x_continuous(breaks = unique(PEPP_gen_dep_plotting$time_point)) +
+  labs(x = "Time Point (Months)", y = "CDSS General Depressive Composite Score", colour = "Latent Class") +
+  geom_point(size = 1, alpha = 0.1) +  # Smaller and more transparent points
+  labs(title = "CDSS General Depressive Composite Score Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  #guides(color = "none", fill = "none") +  # Remove the legend for fill (SE band)
+  scale_color_manual(values = RColorBrewer::brewer.pal(n = length(unique(PEPP_gen_dep_plotting$class)), name = "Set1")) +  # Distinct colors
+  theme_classic()
+
+```
+
+## Fit statistics for General Depressive symptom LCGA 
+
+```{r}
+# Posterior probabilities
+pp_gen_dep1 <- lcga1_gen_dep$pprob
+pp_gen_dep2 <- lcga2_gen_dep$pprob
+pp_gen_dep3 <- lcga3_gen_dep$pprob
+pp_gen_dep4 <- lcga4_gen_dep$pprob
+pp_gen_dep5 <- lcga5_gen_dep$pprob
+
+# Average posterior probabilities
+
+app2_gen_dep <- sapply(1:2, function(k) {
+  mean(pp_gen_dep2[pp_gen_dep2$class == k, paste0("prob", k)])
+})
+cat("2-class:\n")
+print(app2_gen_dep)
+
+app3_gen_dep <- sapply(1:3, function(k) {
+  mean(pp_gen_dep3[pp_gen_dep3$class == k, paste0("prob", k)])
+})
+cat("3-class:\n")
+print(app3_gen_dep)
+
+app4_gen_dep <- sapply(1:4, function(k) {
+  mean(pp_gen_dep4[pp_gen_dep4$class == k, paste0("prob", k)])
+})
+cat("4-class:\n")
+print(app4_gen_dep)
+
+app5_gen_dep <- sapply(1:5, function(k) {
+  mean(pp_gen_dep5[pp_gen_dep5$class == k, paste0("prob", k)])
+})
+cat("5-class:\n")
+print(app5_gen_dep)
+
+# Scaled entropy function
+scaled_entropy <- function(pprob) {
+  # Extract posterior probability columns
+  prob_cols <- grep("^prob", names(pprob), value = TRUE)
+  probs <- as.matrix(pprob[, prob_cols])
+  
+  n <- nrow(probs)
+  k <- ncol(probs)
+  
+  # Compute normalized entropy
+  raw_entropy <- -sum(probs * log(probs + 1e-12)) / (n * log(k))
+  return(round(1 - raw_entropy, 4))
+}
+
+entropy_gen_dep2 <- scaled_entropy(pp_gen_dep2)
+cat("Scaled Entropy (2-class):", entropy_gen_dep2, "\n")
+
+entropy_gen_dep3 <- scaled_entropy(pp_gen_dep3)
+cat("Scaled Entropy (3-class):", entropy_gen_dep3, "\n")
+
+entropy_gen_dep4 <- scaled_entropy(pp_gen_dep4)
+cat("Scaled Entropy (4-class):", entropy_gen_dep4, "\n")
+
+entropy_gen_dep5 <- scaled_entropy(pp_gen_dep5)
+cat("Scaled Entropy (5-class):", entropy_gen_dep5, "\n")
+
+# Cross-check N from posterior-probability tables
+n_from_models <- sapply(
+  list(`1-class`=lcga1_gen_dep, `2-class`=lcga2_gen_dep, `3-class`=lcga3_gen_dep, 
+       `4-class`=lcga4_gen_dep, `5-class`=lcga5_gen_dep),
+  function(m) nrow(m$pprob)
+)
+print(n_from_models)
+
+# Class counts and percentages
+class_summary <- lapply(
+  list(`2-class`=lcga2_gen_dep, `3-class`=lcga3_gen_dep, `4-class`=lcga4_gen_dep,
+       `5-class`=lcga5_gen_dep),
+  function(m) list(counts = table(m$pprob$class),
+                   perc   = round(100 * prop.table(table(m$pprob$class)), 1))
+)
+class_summary
+```
+
+LCGA Trajectory Modeling with Fit Statistics (Negative Symptoms)
+
+```{r}
+set.seed(123)
+
+lcga1_sans <- lcmm::hlme(sans_score ~ time_point, subject = "pin", ng = 1, data = PEPP_final)
+lcga2_sans <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", ng = 2, 
+                             data = PEPP_final, mixture =~time_point))
+lcga3_sans <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", ng = 3, 
+                             data = PEPP_final, mixture =~time_point))
+lcga4_sans <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", ng = 4, 
+                             data = PEPP_final, mixture =~time_point))
+lcga5_sans <- gridsearch(rep = 100, maxiter = 200, minit= lcga1_sans, 
+                    m = hlme(sans_score ~ time_point, subject = "pin", ng = 5, 
+                             data = PEPP_final, mixture =~time_point))
+
+#make table with results for the 5 models
+model_comparison_sans <- summarytable(lcga1_sans, lcga2_sans, lcga3_sans, 
+                                      lcga4_sans, lcga5_sans)
+model_comparison_sans <- as.data.frame(model_comparison_sans)
+lowest_bic_model <- which.min(model_comparison_sans$BIC)
+cat("The model with the lowest BIC is: lcga", lowest_bic_model, "\n")
+
+# Extract cluster assignments from each LCGA model
+df1_sans <- lcga1_sans$pprob[,1:2] %>% rename(Class1 = class)
+df2_sans <- lcga2_sans$pprob[,1:2] %>% rename(Class2 = class)
+df3_sans <- lcga3_sans$pprob[,1:2] %>% rename(Class3 = class)
+df4_sans <- lcga4_sans$pprob[,1:2] %>% rename(Class4 = class)
+df5_sans <- lcga5_sans$pprob[,1:2] %>% rename(Class5 = class)
+
+# Merge datasets by pin
+df_sans <- reduce(list(df1_sans, df2_sans, df3_sans, df4_sans, df5_sans), 
+                  left_join, by = "pin")
+
+# Convert to long format
+df_long_sans <- df_sans %>%
+  pivot_longer(cols = starts_with("Class"), 
+               names_to = "Model", 
+               values_to = "Cluster") %>%
+  mutate(Model = as.factor(gsub("Class", "", Model)),  # Convert Model to factor
+         Cluster = as.factor(Cluster))  # Ensure Cluster is categorical
+
+# Check structure
+str(df_long_sans)
+```
+
+Visualize class membership 
+```{r}
+# Set color palette based on max number of clusters
+num_clusters <- length(unique(df_long_sans$Cluster))
+palette_colors <- RColorBrewer::brewer.pal(n = min(num_clusters, 12), name = "Set1")  # Use up to 12 colors
+
+# Alluvial plot
+ggplot(df_long_sans, aes(x = Model, stratum = Cluster, alluvium = pin, fill = Cluster)) +
+  geom_flow(stat = "alluvium", alpha = 0.7) +  # Flow connections
+  geom_stratum(alpha = 0.8) +  # Cluster strata
+  scale_x_discrete(limits = as.character(1:6)) +  # Ensure all models appear
+  scale_fill_manual(values = palette_colors) +  # Apply custom color palette
+  labs(title = "Changes in Class Membership Across LCGA Models",
+       x = "Number of Classes in Model",
+       y = "Count of Individuals") +
+  theme_minimal()
+
+# Extract probabilities from the lcga model
+probabilities = lcga3_sans$pprob[, 3:5]
+
+# Convert to matrix for headman
+heatmap_data <- as.matrix(probabilities)
+rownames(heatmap_data) <- lcga3_sans$pprob$pin
+
+# Melt the matrix to long format
+heatmap_long <- melt(heatmap_data)
+colnames(heatmap_long) <- c("Pin", "Class", "Probability")
+
+# Determine the class with the highest probability for each individual (Pin)
+heatmap_long$Max_Prob_Class <- apply(heatmap_data, 1, function(x) which.max(x))
+
+# Reorder the Pins based on the class with the highest probability
+heatmap_long$Pin <- factor(heatmap_long$Pin, levels = unique(heatmap_long$Pin[order(heatmap_long$Max_Prob_Class)]))
+
+# Plot heatmap
+ggplot(heatmap_long, aes(x = Class, y = Pin, fill = Probability)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(title = "Soft Assignment: Membership Probabilities Heatmap", x = "Latent Class", y = "Pin") +
+  theme_minimal()
+
+trajectory <- as.data.frame(lcga3_sans$pprob[, 1:2]) #best fit model
+
+# trajectory has class labels for each pin, merge them into PEPP_sans data
+PEPP_sans_plotting <- PEPP_final %>%
+  left_join(trajectory, by = "pin") %>%
+  mutate(class = factor(class)) 
+```
+
+Visualize trajectories
+
+```{r}
+
+# Plotting
+PEPP_sans_plotting %>%
+  ggplot(aes(x = time_point, y = sans_score, group = pin, color = class)) +
+  geom_line(alpha = 0.1, size = 0.5) +  # Make lines more transparent and thinner
+  geom_smooth(aes(group = class), method = "loess", size = 2, se = TRUE, alpha = 0.4) +  # Match SE band color with lines
+  scale_x_continuous(breaks = unique(PEPP_sans_plotting$time_point)) +
+  labs(x = "Time Point (Months)", y = "SANS Negative Symptoms Composite Score", colour = "Latent Class") +
+  geom_point(size = 1, alpha = 0.1) +  # Smaller and more transparent points
+  labs(title = "SANS Negative Symptoms Composite Score Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  #guides(color = "none", fill = "none") +  # Remove the legend for fill (SE band)
+  scale_color_manual(values = RColorBrewer::brewer.pal(n = length(unique(PEPP_sans_plotting$class)), name = "Set1")) +  # Distinct colors
+  theme_classic()
+```
+
+Comparing SANS trajectories
+
+```{r}
+# Posterior probabilities
+pp_sans1 <- lcga1_sans$pprob
+pp_sans2 <- lcga2_sans$pprob
+pp_sans3 <- lcga3_sans$pprob
+pp_sans4 <- lcga4_sans$pprob
+pp_sans5 <- lcga5_sans$pprob
+
+## Average posterior probability
+
+app2_sans <- sapply(1:2, function(k) {
+  mean(pp_sans2[pp_sans2$class == k, paste0("prob", k)])
+})
+cat("2-class:\n")
+print(app2_sans)
+
+app3_sans <- sapply(1:3, function(k) {
+  mean(pp_sans3[pp_sans3$class == k, paste0("prob", k)])
+})
+cat("3-class:\n")
+print(app3_sans)
+
+app4_sans <- sapply(1:4, function(k) {
+  mean(pp_sans4[pp_sans4$class == k, paste0("prob", k)])
+})
+cat("4-class:\n")
+print(app4_sans)
+
+app5_sans <- sapply(1:5, function(k) {
+  mean(pp_sans5[pp_sans5$class == k, paste0("prob", k)])
+})
+cat("5-class:\n")
+print(app5_sans)
+
+# Scaled entropy function
+scaled_entropy <- function(pprob) {
+  # Extract posterior probability columns
+  prob_cols <- grep("^prob", names(pprob), value = TRUE)
+  probs <- as.matrix(pprob[, prob_cols])
+  
+  n <- nrow(probs)
+  k <- ncol(probs)
+  
+  # Compute normalized entropy
+  raw_entropy <- -sum(probs * log(probs + 1e-12)) / (n * log(k))
+  return(round(1 - raw_entropy, 4))
+}
+
+entropy_sans2 <- scaled_entropy(pp_sans2)
+cat("Scaled Entropy (2-class):", entropy_sans2, "\n")
+
+entropy_sans3 <- scaled_entropy(pp_sans3)
+cat("Scaled Entropy (3-class):", entropy_sans3, "\n")
+
+entropy_sans4 <- scaled_entropy(pp_sans4)
+cat("Scaled Entropy (4-class):", entropy_sans4, "\n")
+
+entropy_sans5 <- scaled_entropy(pp_sans5)
+cat("Scaled Entropy (5-class):", entropy_sans5, "\n")
+
+# Cross-check N from posterior-probability tables
+n_from_models <- sapply(
+  list(`1-class`=lcga1_sans, `2-class`=lcga2_sans, `3-class`=lcga3_sans, 
+       `4-class`=lcga4_sans, `5-class`=lcga5_sans),
+  function(m) nrow(m$pprob)
+)
+print(n_from_models)
+
+# Class counts and percentages
+class_summary <- lapply(
+  list(`2-class`=lcga2_sans, `3-class`=lcga3_sans, `4-class`=lcga4_sans, 
+       `5-class`=lcga5_sans),
+  function(m) list(counts = table(m$pprob$class),
+                   perc   = round(100 * prop.table(table(m$pprob$class)), 1))
+)
+class_summary
+
+```
+
